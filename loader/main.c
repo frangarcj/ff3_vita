@@ -15,8 +15,6 @@
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/power.h>
 #include <psp2/touch.h>
-#include <vitaGL.h>
-#include <vitashark.h>
 
 #include <OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
@@ -42,8 +40,35 @@
 #include "main.h"
 #include "so_util.h"
 
+#include <gpu_es4/psp2_pvr_hint.h>
+#include <psp2/kernel/modulemgr.h>
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES/gl.h>
+#include <GLES/glext.h>
+
 int _newlib_heap_size_user = MEMORY_NEWLIB_MB * 1024 * 1024;
 
+unsigned int sceLibcHeapSize = 50 * 1024 * 1024;
+
+EGLDisplay eglDisplay;
+EGLConfig configs[2];
+EGLContext eglContext;
+EGLSurface eglSurface;
+const char *gl_vendor, *gl_renderer, *gl_version, *gl_extensions;
+EGLint cfg_attribs[] = {EGL_BUFFER_SIZE, EGL_DONT_CARE,
+                        EGL_RED_SIZE,    8,
+                        EGL_GREEN_SIZE,  8,
+                        EGL_BLUE_SIZE,   8,
+                        EGL_ALPHA_SIZE,  8,
+                        EGL_NONE};
+static const char *const egl_error_strings[] = {
+    "EGL_SUCCESS",       "EGL_NOT_INITIALIZED",     "EGL_BAD_ACCESS",
+    "EGL_BAD_ALLOC",     "EGL_BAD_ATTRIBUTE",       "EGL_BAD_CONFIG",
+    "EGL_BAD_CONTEXT",   "EGL_BAD_CURRENT_SURFACE", "EGL_BAD_DISPLAY",
+    "EGL_BAD_MATCH",     "EGL_BAD_NATIVE_PIXMAP",   "EGL_BAD_NATIVE_WINDOW",
+    "EGL_BAD_PARAMETER", "EGL_BAD_SURFACE",         "EGL_CONTEXT_LOST"};
 static so_module ff3_mod;
 
 void *__wrap_memcpy(void *dest, const void *src, size_t n) {
@@ -401,6 +426,55 @@ void InitJNIEnv(void) {
   *(uintptr_t *)(fake_env + 0x374) = (uintptr_t)GetStringUTFRegion;
 }
 
+__attribute__((pcs("aapcs-vfp"))) void glAlphaFunc(GLenum func, GLclampf ref);
+
+__attribute__((naked)) void soft_glAlphaFunc(GLenum func, GLclampf ref) {
+  glAlphaFunc(func, ref);
+}
+
+__attribute__((pcs("aapcs-vfp"))) void
+glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
+
+__attribute__((naked)) void soft_glClearColor(GLclampf red, GLclampf green,
+                                              GLclampf blue, GLclampf alpha) {
+  glClearColor(red, green, blue, alpha);
+}
+
+__attribute__((pcs("aapcs-vfp"))) void glLightfv(GLenum light, GLenum pname,
+                                                 const GLfloat *params);
+
+__attribute__((naked)) void soft_glLightfv(GLenum light, GLenum pname,
+                                           const GLfloat *params) {
+  glLightfv(light, pname, params);
+}
+
+__attribute__((pcs("aapcs-vfp"))) void glLoadMatrixf(const GLfloat *m);
+__attribute__((naked)) void soft_glLoadMatrixf(const GLfloat *m) {
+  glLoadMatrixf(m);
+}
+
+__attribute__((pcs("aapcs-vfp"))) void glMultMatrixf(const GLfloat *m);
+__attribute__((naked)) void soft_glMultMatrixf(const GLfloat *m) {
+  glMultMatrixf(m);
+}
+
+__attribute__((pcs("aapcs-vfp"))) void glOrthof(GLfloat left, GLfloat right,
+                                                GLfloat bottom, GLfloat top,
+                                                GLfloat near, GLfloat far);
+
+__attribute__((naked)) void glOrthof_fake(GLfloat left, GLfloat right,
+                                          GLfloat bottom, GLfloat top,
+                                          GLfloat near, GLfloat far) {
+  glOrthof(left, right, bottom, top, near, far);
+}
+
+__attribute__((pcs("aapcs-vfp"))) void glTranslatef(GLfloat x, GLfloat y,
+                                                    GLfloat z);
+
+__attribute__((naked)) void soft_glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
+  glTranslatef(x, y, z);
+}
+
 void *Android_JNI_GetEnv(void) { return fake_env; }
 
 int pthread_mutex_init_fake(pthread_mutex_t **uid, const int *mutexattr) {
@@ -566,16 +640,24 @@ void setup_viewport(int width, int height) {
   int x = (width - this_width) / 2;
   int y = (height - this_height) / 2;
   glViewport(x, y, this_width, this_height);
+}
 
+static void handle_egl_error(char *name) {
+  EGLint error_code = eglGetError();
+
+  printf("'%s' returned egl error '%s' (0x%x)\n", name,
+         egl_error_strings[error_code - EGL_SUCCESS], error_code);
+
+  exit(1);
 }
 
 int main_thread(SceSize args, void *argp) {
-  vglSetupRuntimeShaderCompiler(SHARK_OPT_UNSAFE, SHARK_ENABLE, SHARK_ENABLE,
+  /*vglSetupRuntimeShaderCompiler(SHARK_OPT_UNSAFE, SHARK_ENABLE, SHARK_ENABLE,
                                 SHARK_ENABLE);
   vglUseVram(GL_TRUE);
   vglInitExtended(0, SCREEN_W, SCREEN_H,
                   MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024,
-                  SCE_GXM_MULTISAMPLE_4X);
+                  SCE_GXM_MULTISAMPLE_4X);*/
 
   int (*ff3_render)(char *, int, int, int, int) =
       (void *)so_symbol(&ff3_mod, "render");
@@ -583,6 +665,29 @@ int main_thread(SceSize args, void *argp) {
                    unsigned int) = (void *)so_symbol(&ff3_mod, "touch");
 
   readHeader();
+  // setup_viewport(SCREEN_W, SCREEN_H);
+  eglContext = eglCreateContext(eglDisplay, configs[0], EGL_NO_CONTEXT, NULL);
+  int eRetStatus =
+      eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
+  if (eRetStatus != EGL_TRUE) {
+    handle_egl_error("eglInitialize");
+  }
+  eRetStatus = eglSwapInterval(eglDisplay, (EGLint)1);
+  if (eRetStatus != EGL_TRUE) {
+    handle_egl_error("eglInitialize");
+  }
+  printf("%p, %p %p\n", eglDisplay, eglSurface, eglContext);
+
+  printf("%p, %p %p\n", eglDisplay, eglSurface, eglContext);
+  gl_vendor = (char *)glGetString(GL_VENDOR);
+  printf("GL_VENDOR: %s\n", gl_vendor);
+  gl_renderer = (char *)glGetString(GL_RENDERER);
+  printf("GL_RENDERER: %s\n", gl_renderer);
+
+  gl_version = (char *)glGetString(GL_VERSION);
+  printf("GL_VERSION: %s\n", gl_version);
+  gl_extensions = (char *)glGetString(GL_EXTENSIONS);
+  printf("GL_EXTENSIONS: %s\n", gl_extensions);
   setup_viewport(SCREEN_W, SCREEN_H);
   while (1) {
 
@@ -603,7 +708,7 @@ int main_thread(SceSize args, void *argp) {
               coordinates[2], coordinates[3], 0);
 
     ff3_render(fake_env, 0, this_width, this_height, 0);
-    vglSwapBuffers(GL_FALSE);
+    int res = eglSwapBuffers(eglDisplay, eglSurface);
   }
 
   return 0;
@@ -867,14 +972,13 @@ static DynLibFunction dynlib_functions[] = {
     {"fwrite", (uintptr_t)&fwrite},
     {"getcwd", (uintptr_t)&getcwd},
     {"gettimeofday", (uintptr_t)&gettimeofday},
-    {"glActiveTexture", (uintptr_t)&glActiveTexture},
-    {"glAlphaFunc", (uintptr_t)&glAlphaFunc},
+    {"glAlphaFunc", (uintptr_t)&soft_glAlphaFunc},
     {"glBindBuffer", (uintptr_t)&glBindBuffer},
-    {"glBindFramebufferOES", (uintptr_t)&glBindFramebuffer},
+    {"glBindFramebufferOES", (uintptr_t)&glBindFramebufferOES},
     {"glBindTexture", (uintptr_t)&glBindTexture},
     {"glBlendFunc", (uintptr_t)&glBlendFunc},
     {"glClear", (uintptr_t)&glClear},
-    {"glClearColor", (uintptr_t)&glClearColor},
+    {"glClearColor", (uintptr_t)&soft_glClearColor},
     {"glClearDepthf", (uintptr_t)&glClearDepthf},
     {"glClearStencil", (uintptr_t)&glClearStencil},
     {"glClientActiveTexture", (uintptr_t)&glClientActiveTexture},
@@ -901,13 +1005,13 @@ static DynLibFunction dynlib_functions[] = {
     {"glGetError", (uintptr_t)&glGetError},
     {"glGetIntegerv", (uintptr_t)&glGetIntegerv},
     {"glGetString", (uintptr_t)&glGetString},
-    {"glLightfv", (uintptr_t)&glLightfv},
+    {"glLightfv", (uintptr_t)&soft_glLightfv},
     {"glLoadIdentity", (uintptr_t)&glLoadIdentity},
-    {"glLoadMatrixf", (uintptr_t)&glLoadMatrixf},
+    {"glLoadMatrixf", (uintptr_t)&soft_glLoadMatrixf},
     {"glMatrixMode", (uintptr_t)&glMatrixMode},
-    {"glMultMatrixf", (uintptr_t)&glMultMatrixf},
-    {"glNormalPointer", (uintptr_t)&ret0},
-    {"glOrthof", (uintptr_t)&glOrthof},
+    {"glMultMatrixf", (uintptr_t)&soft_glMultMatrixf},
+    {"glNormalPointer", (uintptr_t)&glNormalPointer},
+    {"glOrthof", (uintptr_t)&glOrthof_fake},
     {"glPopMatrix", (uintptr_t)&glPopMatrix},
     {"glPushMatrix", (uintptr_t)&glPushMatrix},
     {"glReadPixels", (uintptr_t)&glReadPixels},
@@ -1021,6 +1125,45 @@ int file_exists(const char *path) {
 }
 
 int main(int argc, char *argv[]) {
+
+  sceKernelLoadStartModule("vs0:sys/external/libfios2.suprx", 0, NULL, 0, NULL,
+                           NULL);
+  sceKernelLoadStartModule("vs0:sys/external/libc.suprx", 0, NULL, 0, NULL,
+                           NULL);
+  sceKernelLoadStartModule("app0:libgpu_es4_ext.suprx", 0, NULL, 0, NULL, NULL);
+  sceKernelLoadStartModule("app0:libIMGEGL.suprx", 0, NULL, 0, NULL, NULL);
+
+  PVRSRV_PSP2_APPHINT hint;
+
+  PVRSRVInitializeAppHint(&hint);
+  PVRSRVCreateVirtualAppHint(&hint);
+
+  EGLint egl_config_attr[] = {
+      EGL_BUFFER_SIZE,  16, EGL_DEPTH_SIZE,   16,
+      EGL_STENCIL_SIZE, 8,  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_NONE};
+  EGLint numConfigs, majorVersion, minorVersion;
+
+  eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  int eRetStatus = eglInitialize(eglDisplay, &majorVersion, &minorVersion);
+  if (eRetStatus != EGL_TRUE) {
+    handle_egl_error("eglInitialize");
+  }
+  eRetStatus = eglGetConfigs(eglDisplay, configs, 2, &numConfigs);
+
+  if (eRetStatus != EGL_TRUE) {
+    handle_egl_error("eglGetConfigs");
+  }
+
+  eRetStatus =
+      eglChooseConfig(eglDisplay, cfg_attribs, configs, 2, &numConfigs);
+
+  if (eRetStatus != EGL_TRUE) {
+    handle_egl_error("eglChooseConfig");
+  }
+  eglSurface = eglCreateWindowSurface(eglDisplay, configs[0],
+                                      (EGLNativeWindowType)0, NULL);
+
   sceCtrlSetSamplingModeExt(SCE_CTRL_MODE_ANALOG_WIDE);
   sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT,
                            SCE_TOUCH_SAMPLING_STATE_START);

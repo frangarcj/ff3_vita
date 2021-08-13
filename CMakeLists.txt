@@ -15,7 +15,7 @@ set(VITA_TITLEID  "FF3000000")
 set(VITA_VERSION  "01.00")
 set(VITA_MKSFOEX_FLAGS "-d ATTRIBUTE2=12")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wl,-q,--wrap,memcpy,--wrap,memmove,--wrap,memset -Wall -O3 -mfloat-abi=softfp")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wl,-q,--wrap,memcpy,--wrap,memmove,--wrap,memset -Wall -O3 -mfloat-abi=softfp -D__psp2__")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
 
 add_executable(FF3.elf
@@ -30,9 +30,6 @@ add_executable(FF3.elf
 target_link_libraries(FF3.elf
   m
   stdc++
-  vitaGL
-  vitashark
-  mathneon
   kubridge_stub
   SceAppMgr_stub
   SceAudio_stub
@@ -51,6 +48,7 @@ target_link_libraries(FF3.elf
   SDL
   SceHid_stub
   z
+  liblibGLESv1_CM_stub_weak.a liblibgpu_es4_ext_stub_weak.a liblibIMGEGL_stub_weak.a
   -Wl,--whole-archive
   pthread
   -Wl,--no-whole-archive

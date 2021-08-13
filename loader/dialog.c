@@ -132,12 +132,12 @@ void fatal_error(const char *fmt, ...) {
   vsnprintf(string, sizeof(string), fmt, list);
   va_end(list);
 
-  vglInit(0);
+  printf(string);
 
-  init_msg_dialog(string);
+  /*init_msg_dialog(string);
 
-  while (!get_msg_dialog_result())
-    vglSwapBuffers(GL_TRUE);
+  while (!get_msg_dialog_result());
+    eglSwapBuffers(GL_TRUE);*/
 
   sceKernelExitProcess(0);
   while (1);
