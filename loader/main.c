@@ -57,11 +57,15 @@ EGLConfig configs[2];
 EGLContext eglContext;
 EGLSurface eglSurface;
 const char *gl_vendor, *gl_renderer, *gl_version, *gl_extensions;
-EGLint cfg_attribs[] = {EGL_BUFFER_SIZE, EGL_DONT_CARE,
-                        EGL_RED_SIZE,    8,
-                        EGL_GREEN_SIZE,  8,
-                        EGL_BLUE_SIZE,   8,
-                        EGL_ALPHA_SIZE,  8,
+EGLint cfg_attribs[] = {EGL_BUFFER_SIZE,  EGL_DONT_CARE,
+                        EGL_RED_SIZE,     8,
+                        EGL_GREEN_SIZE,   8,
+                        EGL_BLUE_SIZE,    8,
+                        EGL_ALPHA_SIZE,   8,
+                        EGL_BUFFER_SIZE,  16,
+                        EGL_DEPTH_SIZE,   16,
+                        EGL_STENCIL_SIZE, 8,
+                        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
                         EGL_NONE};
 static const char *const egl_error_strings[] = {
     "EGL_SUCCESS",       "EGL_NOT_INITIALIZED",     "EGL_BAD_ACCESS",
@@ -420,29 +424,11 @@ __attribute__((naked)) void soft_glClearColor(GLclampf red, GLclampf green,
   glClearColor(red, green, blue, alpha);
 }
 
-__attribute__((pcs("aapcs-vfp"))) void glLightfv(GLenum light, GLenum pname,
-                                                 const GLfloat *params);
-
-__attribute__((naked)) void soft_glLightfv(GLenum light, GLenum pname,
-                                           const GLfloat *params) {
-  glLightfv(light, pname, params);
-}
-
-__attribute__((pcs("aapcs-vfp"))) void glLoadMatrixf(const GLfloat *m);
-__attribute__((naked)) void soft_glLoadMatrixf(const GLfloat *m) {
-  glLoadMatrixf(m);
-}
-
-__attribute__((pcs("aapcs-vfp"))) void glMultMatrixf(const GLfloat *m);
-__attribute__((naked)) void soft_glMultMatrixf(const GLfloat *m) {
-  glMultMatrixf(m);
-}
-
 __attribute__((pcs("aapcs-vfp"))) void glOrthof(GLfloat left, GLfloat right,
                                                 GLfloat bottom, GLfloat top,
                                                 GLfloat near, GLfloat far);
 
-__attribute__((naked)) void glOrthof_fake(GLfloat left, GLfloat right,
+__attribute__((naked)) void soft_glOrthof(GLfloat left, GLfloat right,
                                           GLfloat bottom, GLfloat top,
                                           GLfloat near, GLfloat far) {
   glOrthof(left, right, bottom, top, near, far);
