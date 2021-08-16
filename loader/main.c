@@ -466,7 +466,7 @@ int pthread_mutex_init_fake(pthread_mutex_t **uid, const int *mutexattr) {
   *m = recursive ? PTHREAD_RECURSIVE_MUTEX_INITIALIZER
                  : PTHREAD_MUTEX_INITIALIZER;
 
-  int ret = pthread_mutex_init(m, NULL);
+  int ret = pthread_mutex_init(m, mutexattr);
   if (ret < 0) {
     free(m);
     return -1;
@@ -491,8 +491,17 @@ int pthread_mutex_lock_fake(pthread_mutex_t **uid) {
   if (!*uid) {
     ret = pthread_mutex_init_fake(uid, NULL);
   } else if ((uintptr_t)*uid == 0x4000) {
-    int attr = 1; // recursive
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     ret = pthread_mutex_init_fake(uid, &attr);
+    pthread_mutexattr_destroy(&attr);
+  } else if ((uintptr_t)*uid == 0x8000) {
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+    ret = pthread_mutex_init_fake(uid, &attr);
+    pthread_mutexattr_destroy(&attr);
   }
   if (ret < 0)
     return ret;
@@ -504,8 +513,17 @@ int pthread_mutex_unlock_fake(pthread_mutex_t **uid) {
   if (!*uid) {
     ret = pthread_mutex_init_fake(uid, NULL);
   } else if ((uintptr_t)*uid == 0x4000) {
-    int attr = 1; // recursive
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     ret = pthread_mutex_init_fake(uid, &attr);
+    pthread_mutexattr_destroy(&attr);
+  } else if ((uintptr_t)*uid == 0x8000) {
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+    ret = pthread_mutex_init_fake(uid, &attr);
+    pthread_mutexattr_destroy(&attr);
   }
   if (ret < 0)
     return ret;
@@ -939,10 +957,10 @@ static DynLibFunction dynlib_functions[] = {
     {"glLoadMatrixf", (uintptr_t)&glLoadMatrixf},
     {"glMatrixMode", (uintptr_t)&glMatrixMode},
     {"glMultMatrixf", (uintptr_t)&glMultMatrixf},
-    {"glOrthof", (uintptr_t)&glOrthof},
+    {"glOrthof", (uintptr_t)&soft_glOrthof},
     {"glPopMatrix", (uintptr_t)&glPopMatrix},
     {"glPushMatrix", (uintptr_t)&glPushMatrix},
-    {"glTranslatef", (uintptr_t)&glTranslatef},
+    {"glTranslatef", (uintptr_t)&soft_glTranslatef},
     {"glTexCoordPointer", (uintptr_t)&glTexCoordPointer},
     {"glTexImage2D", (uintptr_t)&glTexImage2D},
     {"glTexParameteri", (uintptr_t)&glTexParameteri},

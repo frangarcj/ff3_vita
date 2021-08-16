@@ -282,8 +282,6 @@ jni_bytearray *loadRawFile(char *str) {
 
   int file_length;
   unsigned char *a = m476a(str, &file_length);
-  if(strstr(str,"sound")) //TODO: FIX SOUND
-    return NULL;
 
   if (a == NULL) {
     return NULL;
