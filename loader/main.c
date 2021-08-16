@@ -85,18 +85,6 @@ int ret0(void) { return 0; }
 
 int ret1(void) { return 1; }
 
-int mkdir(const char *pathname, mode_t mode) {
-  if (sceIoMkdir(pathname, mode) < 0)
-    return -1;
-  return 0;
-}
-
-int rmdir(const char *pathname) {
-  if (sceIoRmdir(pathname) < 0)
-    return -1;
-  return 0;
-}
-
 int __android_log_print(int prio, const char *tag, const char *fmt, ...) {
 #ifdef DEBUG
   va_list list;
@@ -340,13 +328,9 @@ int GetFieldID(void *env, void *clazz, const char *name, const char *sig) {
 
 int GetFloatField(void *env, void *obj, int fieldID) { return 0; }
 
-int GetArrayLength(void *env, jni_bytearray *obj) {
-  printf("GetArrayLength %p %d \n", obj, obj->size);
-  return obj->size;
-}
+int GetArrayLength(void *env, jni_bytearray *obj) { return obj->size; }
 
 void *GetByteArrayElements(void *env, jni_bytearray *obj) {
-  printf("GetByteArrayElements %p \n", obj->elements);
   return obj->elements;
 }
 
@@ -354,24 +338,20 @@ void *NewByteArray(void *env, size_t length) {
   jni_bytearray *result = malloc(sizeof(jni_bytearray));
   result->elements = malloc(length);
   result->size = length;
-  printf("NewByteArray %d \n", (length));
   return result;
 }
 
 void *GetIntArrayElements(void *env, jni_intarray *obj) {
-  printf("GetIntArrayElements %p \n", obj);
   return obj->elements;
 }
 
 int ReleaseByteArrayElements(void *env, jni_bytearray *obj) {
-  printf("ReleaseByteArrayElements %p \n", obj);
   free(obj->elements);
   free(obj);
   return 0;
 }
 
 int ReleaseIntArrayElements(void *env, jni_intarray *obj) {
-  printf("ReleaseIntArrayElements %p \n", obj);
   free(obj->elements);
   free(obj);
   return 0;
@@ -756,19 +736,11 @@ extern void *_Znaj;
 extern void *_Znwj;
 
 extern void *__aeabi_atexit;
-extern void *__aeabi_d2f;
 extern void *__aeabi_d2ulz;
 extern void *__aeabi_dcmpgt;
 extern void *__aeabi_dmul;
 extern void *__aeabi_f2d;
-extern void *__aeabi_f2iz;
-extern void *__aeabi_f2ulz;
 extern void *__aeabi_fadd;
-extern void *__aeabi_fcmpge;
-extern void *__aeabi_fcmpgt;
-extern void *__aeabi_fcmple;
-extern void *__aeabi_fcmplt;
-extern void *__aeabi_fdiv;
 extern void *__aeabi_fsub;
 extern void *__aeabi_idiv;
 extern void *__aeabi_idivmod;
@@ -780,13 +752,7 @@ extern void *__aeabi_uidivmod;
 extern void *__aeabi_uldivmod;
 extern void *__cxa_atexit;
 extern void *__cxa_finalize;
-extern void *__cxa_guard_acquire;
-extern void *__cxa_guard_release;
-extern void *__cxa_pure_virtual;
-extern void *__dso_handle;
-extern void *__sF;
 extern void *__stack_chk_fail;
-extern void *__stack_chk_guard;
 
 static int __stack_chk_guard_fake = 0x42424242;
 static FILE __sF_fake[0x100][3];
@@ -802,7 +768,6 @@ struct tm *localtime_hook(time_t *timer) {
 
 void *mmap(void *addr, size_t length, int prot, int flags, int fd,
            off_t offset) {
-  printf("mmap %d\n", length);
   return malloc(length);
 }
 
@@ -909,19 +874,11 @@ static DynLibFunction dynlib_functions[] = {
     {"_Znwj", (uintptr_t)&_Znwj},
     {"_toupper_tab_", (uintptr_t)&_toupper_tab_},
     {"__aeabi_atexit", (uintptr_t)&__aeabi_atexit},
-    {"__aeabi_d2f", (uintptr_t)&__aeabi_d2f},
     {"__aeabi_d2ulz", (uintptr_t)&__aeabi_d2ulz},
     {"__aeabi_dcmpgt", (uintptr_t)&__aeabi_dcmpgt},
     {"__aeabi_dmul", (uintptr_t)&__aeabi_dmul},
     {"__aeabi_f2d", (uintptr_t)&__aeabi_f2d},
-    {"__aeabi_f2iz", (uintptr_t)&__aeabi_f2iz},
-    {"__aeabi_f2ulz", (uintptr_t)&__aeabi_f2ulz},
     {"__aeabi_fadd", (uintptr_t)&__aeabi_fadd},
-    {"__aeabi_fcmpge", (uintptr_t)&__aeabi_fcmpge},
-    {"__aeabi_fcmpgt", (uintptr_t)&__aeabi_fcmpgt},
-    {"__aeabi_fcmple", (uintptr_t)&__aeabi_fcmple},
-    {"__aeabi_fcmplt", (uintptr_t)&__aeabi_fcmplt},
-    {"__aeabi_fdiv", (uintptr_t)&__aeabi_fdiv},
     {"__aeabi_fsub", (uintptr_t)&__aeabi_fsub},
     {"__aeabi_idiv", (uintptr_t)&__aeabi_idiv},
     {"__aeabi_idivmod", (uintptr_t)&__aeabi_idivmod},
@@ -935,107 +892,63 @@ static DynLibFunction dynlib_functions[] = {
     {"__assert2", (uintptr_t)&__assert2},
     {"__cxa_atexit", (uintptr_t)&__cxa_atexit},
     {"__cxa_finalize", (uintptr_t)&__cxa_finalize},
-    {"__cxa_guard_acquire", (uintptr_t)&__cxa_guard_acquire},
-    {"__cxa_guard_release", (uintptr_t)&__cxa_guard_release},
-    {"__cxa_pure_virtual", (uintptr_t)&__cxa_pure_virtual},
-    {"__dso_handle", (uintptr_t)&__dso_handle},
     {"__errno", (uintptr_t)&__errno},
     {"__sF", (uintptr_t)&__sF_fake},
     {"__stack_chk_fail", (uintptr_t)&__stack_chk_fail},
     {"__stack_chk_guard", (uintptr_t)&__stack_chk_guard_fake},
     {"abort", (uintptr_t)&abort},
-    {"acos", (uintptr_t)&acos},
-    {"asin", (uintptr_t)&asin},
-    {"atan", (uintptr_t)&atan},
     {"atanf", (uintptr_t)&atan},
-    {"atan2", (uintptr_t)&atan2},
     {"atan2f", (uintptr_t)&atan2f},
     {"atoi", (uintptr_t)&atoi},
     {"calloc", (uintptr_t)&calloc},
-    {"ceil", (uintptr_t)&ceil},
-    {"close", (uintptr_t)&close},
     {"cos", (uintptr_t)&cos},
     {"cosf", (uintptr_t)&cosf},
-    {"difftime", (uintptr_t)&difftime},
     {"dlopen", (uintptr_t)&ret1},
     {"dlsym", (uintptr_t)&ret1},
     {"dlclose", (uintptr_t)&ret1},
-    {"eglSwapBuffers", (uintptr_t)&eglSwapBuffers},
     {"fclose", (uintptr_t)&fclose},
-    {"fflush", (uintptr_t)&fflush},
-    {"fgets", (uintptr_t)&fgets},
-    {"fileno", (uintptr_t)&fileno},
-    {"floor", (uintptr_t)&floor},
     {"floorf", (uintptr_t)&floorf},
-    {"fmod", (uintptr_t)&fmod},
     {"fopen", (uintptr_t)&fopen},
     {"fprintf", (uintptr_t)&fprintf},
     {"fread", (uintptr_t)&fread},
     {"free", (uintptr_t)&free},
     {"fseek", (uintptr_t)&fseek},
-    {"fstat", (uintptr_t)&fstat},
     {"ftell", (uintptr_t)&ftell},
     {"fwrite", (uintptr_t)&fwrite},
-    {"getcwd", (uintptr_t)&getcwd},
     {"gettimeofday", (uintptr_t)&gettimeofday},
     {"glAlphaFunc", (uintptr_t)&soft_glAlphaFunc},
-    {"glBindBuffer", (uintptr_t)&glBindBuffer},
-    {"glBindFramebufferOES", (uintptr_t)&glBindFramebufferOES},
     {"glBindTexture", (uintptr_t)&glBindTexture},
     {"glBlendFunc", (uintptr_t)&glBlendFunc},
     {"glClear", (uintptr_t)&glClear},
     {"glClearColor", (uintptr_t)&soft_glClearColor},
-    {"glClearDepthf", (uintptr_t)&glClearDepthf},
-    {"glClearStencil", (uintptr_t)&glClearStencil},
-    {"glClientActiveTexture", (uintptr_t)&glClientActiveTexture},
     {"glColor4ub", (uintptr_t)&glColor4ub},
-    {"glColorMask", (uintptr_t)&glColorMask},
     {"glColorPointer", (uintptr_t)&glColorPointer},
-    {"glCompressedTexImage2D", (uintptr_t)&glCompressedTexImage2D},
     {"glCullFace", (uintptr_t)&glCullFace},
-    {"glDeleteBuffers", (uintptr_t)&glDeleteBuffers},
     {"glDeleteTextures", (uintptr_t)&glDeleteTextures},
     {"glDepthFunc", (uintptr_t)&glDepthFunc},
     {"glDepthMask", (uintptr_t)&glDepthMask},
-    {"glDepthRangef", (uintptr_t)&glDepthRangef},
     {"glDisable", (uintptr_t)&glDisable},
     {"glDisableClientState", (uintptr_t)&glDisableClientState},
     {"glDrawArrays", (uintptr_t)&glDrawArrays},
-    {"glDrawElements", (uintptr_t)&glDrawElements},
     {"glEnable", (uintptr_t)&glEnable},
     {"glEnableClientState", (uintptr_t)&glEnableClientState},
-    {"glFogf", (uintptr_t)&glFogf},
-    {"glFogfv", (uintptr_t)&glFogfv},
-    {"glFrontFace", (uintptr_t)&glFrontFace},
     {"glGenTextures", (uintptr_t)&glGenTextures},
     {"glGetError", (uintptr_t)&glGetError},
-    {"glGetIntegerv", (uintptr_t)&glGetIntegerv},
-    {"glGetString", (uintptr_t)&glGetString},
-    {"glLightfv", (uintptr_t)&soft_glLightfv},
+    {"glLightfv", (uintptr_t)&glLightfv},
     {"glLoadIdentity", (uintptr_t)&glLoadIdentity},
-    {"glLoadMatrixf", (uintptr_t)&soft_glLoadMatrixf},
+    {"glLoadMatrixf", (uintptr_t)&glLoadMatrixf},
     {"glMatrixMode", (uintptr_t)&glMatrixMode},
-    {"glMultMatrixf", (uintptr_t)&soft_glMultMatrixf},
-    {"glNormalPointer", (uintptr_t)&glNormalPointer},
-    {"glOrthof", (uintptr_t)&glOrthof_fake},
+    {"glMultMatrixf", (uintptr_t)&glMultMatrixf},
+    {"glOrthof", (uintptr_t)&glOrthof},
     {"glPopMatrix", (uintptr_t)&glPopMatrix},
     {"glPushMatrix", (uintptr_t)&glPushMatrix},
-    {"glReadPixels", (uintptr_t)&glReadPixels},
-    {"glScissor", (uintptr_t)&glScissor},
-    {"glStencilFunc", (uintptr_t)&glStencilFunc},
-    {"glStencilOp", (uintptr_t)&glStencilOp},
     {"glTranslatef", (uintptr_t)&glTranslatef},
     {"glTexCoordPointer", (uintptr_t)&glTexCoordPointer},
-    {"glTexEnvf", (uintptr_t)&glTexEnvf},
-    {"glTexEnvfv", (uintptr_t)&glTexEnvfv},
     {"glTexImage2D", (uintptr_t)&glTexImage2D},
     {"glTexParameteri", (uintptr_t)&glTexParameteri},
     {"glTexSubImage2D", (uintptr_t)&glTexSubImage2D},
     {"glVertexPointer", (uintptr_t)&glVertexPointer},
-    {"glViewport", (uintptr_t)&glViewport},
-    {"ldexp", (uintptr_t)&ldexp},
     {"localtime", (uintptr_t)&localtime_hook},
-    {"log", (uintptr_t)&log},
     {"lrand48", (uintptr_t)&lrand48},
     {"malloc", (uintptr_t)&malloc},
     {"memchr", (uintptr_t)&memchr},
@@ -1043,47 +956,28 @@ static DynLibFunction dynlib_functions[] = {
     {"memcpy", (uintptr_t)&memcpy},
     {"memmove", (uintptr_t)&memmove},
     {"memset", (uintptr_t)&memset},
-    {"mkdir", (uintptr_t)&mkdir},
     {"mmap", (uintptr_t)&mmap},
     {"munmap", (uintptr_t)&munmap},
-    {"pow", (uintptr_t)&pow},
-    {"printf", (uintptr_t)&printf},
-    {"pthread_attr_destroy", (uintptr_t)&ret0},
-    {"pthread_attr_init", (uintptr_t)&ret0},
-    {"pthread_attr_setdetachstate", (uintptr_t)&ret0},
-    {"pthread_attr_setstacksize", (uintptr_t)&ret0},
     {"pthread_cond_broadcast", (uintptr_t)&pthread_cond_broadcast_fake},
     {"pthread_cond_destroy", (uintptr_t)&pthread_cond_destroy_fake},
     {"pthread_cond_init", (uintptr_t)&pthread_cond_init_fake},
-    // { "pthread_cond_signal", (uintptr_t)&pthread_cond_signal_fake },
-    // { "pthread_cond_timedwait", (uintptr_t)&pthread_cond_timedwait_fake },
-    // { "pthread_cond_timedwait_monotonic_np",
-    // (uintptr_t)&pthread_cond_timedwait_monotonic_np },
     {"pthread_cond_wait", (uintptr_t)&pthread_cond_wait_fake},
     {"pthread_create", (uintptr_t)&pthread_create_fake},
-    // { "pthread_detach", (uintptr_t)&pthread_detach },
-    // { "pthread_equal", (uintptr_t)&pthread_equal },
-    // { "pthread_getspecific", (uintptr_t)&pthread_getspecific },
     {"pthread_join", (uintptr_t)&pthread_join},
     {"pthread_key_create", (uintptr_t)&pthread_key_create},
     {"pthread_key_delete", (uintptr_t)&pthread_key_delete},
     {"pthread_mutex_destroy", (uintptr_t)&pthread_mutex_destroy_fake},
     {"pthread_mutex_init", (uintptr_t)&pthread_mutex_init_fake},
     {"pthread_mutex_lock", (uintptr_t)&pthread_mutex_lock_fake},
-    // { "pthread_mutex_trylock", (uintptr_t)&pthread_mutex_trylock_fake },
     {"pthread_mutex_unlock", (uintptr_t)&pthread_mutex_unlock_fake},
-    {"pthread_mutexattr_destroy", (uintptr_t)&ret0},
-    {"pthread_mutexattr_init", (uintptr_t)&ret0},
-    {"pthread_mutexattr_settype", (uintptr_t)&ret0},
-    {"pthread_once", (uintptr_t)&pthread_once_fake},
-    // { "pthread_self", (uintptr_t)&pthread_self },
+    {"pthread_mutexattr_destroy", (uintptr_t)&pthread_mutexattr_destroy},
+    {"pthread_mutexattr_init", (uintptr_t)&pthread_mutexattr_init},
+    {"pthread_mutexattr_settype", (uintptr_t)&pthread_mutexattr_settype},
     {"pthread_setspecific", (uintptr_t)&pthread_setspecific},
     {"pthread_getspecific", (uintptr_t)&pthread_getspecific},
     {"qsort", (uintptr_t)&qsort},
     {"raise", (uintptr_t)&raise},
-    {"read", (uintptr_t)&read},
     {"realloc", (uintptr_t)&realloc},
-    {"rmdir", (uintptr_t)&rmdir},
     {"sin", (uintptr_t)&sin},
     {"sinf", (uintptr_t)&sinf},
     {"slCreateEngine", (uintptr_t)&slCreateEngine},
@@ -1092,32 +986,22 @@ static DynLibFunction dynlib_functions[] = {
     {"sprintf", (uintptr_t)&sprintf},
     {"sqrt", (uintptr_t)&sqrt},
     {"sqrtf", (uintptr_t)&sqrtf},
-    {"sscanf", (uintptr_t)&sscanf},
     {"strcat", (uintptr_t)&strcat},
     {"strchr", (uintptr_t)&strchr},
     {"strcmp", (uintptr_t)&strcmp},
     {"strcpy", (uintptr_t)&strcpy},
-    {"strerror", (uintptr_t)&strerror},
     {"strlen", (uintptr_t)&strlen},
-    {"strncat", (uintptr_t)&strncat},
     {"strncasecmp", (uintptr_t)&strncasecmp},
     {"strncmp", (uintptr_t)&strncmp},
     {"strncpy", (uintptr_t)&strncpy},
     {"strrchr", (uintptr_t)&strrchr},
-    {"strstr", (uintptr_t)&strstr},
     {"strtok", (uintptr_t)&strtok},
     {"strtod", (uintptr_t)&strtod},
     {"strtol", (uintptr_t)&strtol},
-    {"strtoll", (uintptr_t)&strtoll},
-    {"tan", (uintptr_t)&tan},
     {"tanf", (uintptr_t)&tanf},
     {"time", (uintptr_t)&time},
-    {"tolower", (uintptr_t)&tolower},
-    {"toupper", (uintptr_t)&toupper},
     {"usleep", (uintptr_t)&usleep},
-    {"unlink", (uintptr_t)&unlink},
     {"vsnprintf", (uintptr_t)&vsnprintf},
-    {"write", (uintptr_t)&write},
 };
 
 int check_kubridge(void) {
