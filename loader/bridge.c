@@ -57,7 +57,6 @@ unsigned char *gzipRead(unsigned char *bArr, int *bArr_length) {
 }
 
 unsigned char *m476a(char *str, int *file_length) {
-  printf("READ %s \n", str);
   int i;
 
   unsigned char *bArr = header;
@@ -90,11 +89,8 @@ unsigned char *m476a(char *str, int *file_length) {
     i = 0;
   }
   if (i == 0) {
-    printf("NOT FOUND \n");
     return NULL;
   }
-
-  printf("FOUND \n");
 
   const char *a = OBB_FILE;
   FILE *fp = fopen(a, "r");
@@ -164,30 +160,27 @@ int readHeader() {
   return 1;
 }
 
-void toUtf8(const char *src, size_t length, char *dst,
-                       const char *src_encoding,
-                       size_t *dst_length_p) {
+void toUtf8(const char *src, size_t length, char *dst, const char *src_encoding,
+            size_t *dst_length_p) {
 
   UErrorCode status = U_ZERO_ERROR;
   UConverter *conv;
-  int32_t     len;
+  int32_t len;
 
-  char * temp = malloc(length * 2);
+  char *temp = malloc(length * 2);
   u_setDataDirectory("app0:/");
-  printf("%s\n",u_getDataDirectory());
+  printf("%s\n", u_getDataDirectory());
   conv = ucnv_open(src_encoding, &status);
 
-  len = ucnv_toUChars(conv, temp, length*2, src, length, &status);
+  len = ucnv_toUChars(conv, temp, length * 2, src, length, &status);
   ucnv_close(conv);
 
   conv = ucnv_open("utf-8", &status);
-  *dst_length_p = ucnv_fromUChars(conv, dst, length*2, temp, len, &status);
+  *dst_length_p = ucnv_fromUChars(conv, dst, length * 2, temp, len, &status);
   ucnv_close(conv);
 
   free(temp);
-
 }
-
 
 unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
 
@@ -225,7 +218,8 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
         i15++;
       }
       int newLength = 0;
-      toUtf8(&bArr[i12], i15, &bArr3[i13], i==0?"shift_jis":"windows-1252", &newLength);
+      toUtf8(&bArr[i12], i15, &bArr3[i13],
+             i == 0 ? "shift_jis" : "windows-1252", &newLength);
 
       bArr3[newLength + i13] = 0;
 
