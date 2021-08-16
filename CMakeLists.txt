@@ -47,6 +47,8 @@ target_link_libraries(FF3.elf
   sndfile
   SDL
   SceHid_stub
+  icudata
+  icuuc
   z
   liblibGLESv1_CM_stub_weak.a liblibgpu_es4_ext_stub_weak.a liblibIMGEGL_stub_weak.a
   -Wl,--whole-archive

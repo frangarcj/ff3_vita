@@ -11,6 +11,8 @@
 #include "stb_truetype.h"
 
 #include "zlib.h"
+#include <unicode/ucnv.h>
+#include <unicode/ustring.h>
 
 #define SAVE_FILENAME "ux0:/data/ff3"
 #define OBB_FILE                                                               \
@@ -162,6 +164,31 @@ int readHeader() {
   return 1;
 }
 
+void toUtf8(const char *src, size_t length, char *dst,
+                       const char *src_encoding,
+                       size_t *dst_length_p) {
+
+  UErrorCode status = U_ZERO_ERROR;
+  UConverter *conv;
+  int32_t     len;
+
+  char * temp = malloc(length * 2);
+  u_setDataDirectory("app0:/");
+  printf("%s\n",u_getDataDirectory());
+  conv = ucnv_open(src_encoding, &status);
+
+  len = ucnv_toUChars(conv, temp, length*2, src, length, &status);
+  ucnv_close(conv);
+
+  conv = ucnv_open("utf-8", &status);
+  *dst_length_p = ucnv_fromUChars(conv, dst, length*2, temp, len, &status);
+  ucnv_close(conv);
+
+  free(temp);
+
+}
+
+
 unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
 
   int i = 5;
@@ -176,7 +203,6 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
 
   memcpy(bArr3, bArr, i5);
 
-  // System.arraycopy(bArr, 0, bArr3, 0, i5);
   int i6 = i5;
   int i7 = 0;
   int i8 = 16;
@@ -198,12 +224,13 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
       while (bArr[i12 + i15] != 0) {
         i15++;
       }
+      int newLength = 0;
+      toUtf8(&bArr[i12], i15, &bArr3[i13], i==0?"shift_jis":"windows-1252", &newLength);
 
-      memcpy(&bArr3[i13], &bArr[i12], i15);
+      bArr3[newLength + i13] = 0;
 
-      bArr3[i15 + i13] = 0;
       i12 += i15 + 1;
-      i13 += i15 + 1;
+      i13 += newLength + 1;
     }
     i6 = i13 + 1;
     bArr3[i13] = 0;
@@ -214,7 +241,6 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
 
   unsigned char *bArr4 = malloc(i6);
   memcpy(bArr4, bArr3, i6);
-  // System.arraycopy(bArr3, 0, bArr4, 0, i6);
   free(bArr3);
   *bArr_length = i6;
   return bArr4;
@@ -427,7 +453,6 @@ jni_intarray *drawFont(char *word, int size, int i2, int i3) {
   /* render character (stride and offset is important here) */
   int byteOffset = x + roundf(lsb * scale) + (y * b_w);
 
-  printf("%d %d %d %d %d %d\n", x, y, c_x2, c_x1, c_y1, c_y2);
   stbtt_MakeCodepointBitmap(info, bitmap + byteOffset, c_x2 - c_x1, c_y2 - c_y1,
                             b_w, scale, scale, codepoint);
 
