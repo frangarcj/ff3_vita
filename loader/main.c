@@ -745,33 +745,9 @@ int main_thread(SceSize args, void *argp) {
 }
 
 void patch_game(void) {
-
-  /**(int *)so_symbol(&ff3_mod, "_ZN3krm3sal12SCREEN_WIDTHE") = SCREEN_W;
-  *(int *)so_symbol(&ff3_mod, "_ZN3krm3sal13SCREEN_HEIGHTE") = SCREEN_H;
-
-  hook_arm(so_symbol(&ff3_mod, "_ZN3krm10krtNetInitEv"), (uintptr_t)&ret0);
-  hook_arm(so_symbol(&ff3_mod,
-  "_ZN3krm3krt3dbg15krtDebugMgrInitEPNS0_16CApplicationBaseE"),
-  (uintptr_t)&ret0);
-
-  hook_arm(so_symbol(&ff3_mod, "_ZNK3krm3krt2io5CPath6IsRootEv"),
-  (uintptr_t)&krm__krt__io__CPath__IsRoot);
-
-  hook_thumb(so_symbol(&ff3_mod, "Android_KarismaBridge_GetAppReadPath"),
-  (uintptr_t)&Android_KarismaBridge_GetAppReadPath);
-  hook_thumb(so_symbol(&ff3_mod, "Android_KarismaBridge_GetAppWritePath"),
-  (uintptr_t)&Android_KarismaBridge_GetAppWritePath);
-
-  hook_thumb(so_symbol(&ff3_mod, "Android_KarismaBridge_GetKeyboardOpened"),
-  (uintptr_t)&ret0);
-
-  hook_thumb(so_symbol(&ff3_mod, "Android_KarismaBridge_EnableSound"),
-  (uintptr_t)&Android_KarismaBridge_EnableSound); hook_thumb(so_symbol(&ff3_mod,
-  "Android_KarismaBridge_DisableSound"),
-  (uintptr_t)&Android_KarismaBridge_DisableSound);
-  hook_thumb(so_symbol(&ff3_mod, "Android_KarismaBridge_LockSound"),
-  (uintptr_t)&ret0); hook_thumb(so_symbol(&ff3_mod,
-  "Android_KarismaBridge_UnlockSound"), (uintptr_t)&ret0);*/
+#ifdef DEBUG
+  hook_thumb(ff3_mod.text_base + 0xe58b6, (uintptr_t)&printf);
+#endif
 }
 
 extern void *_ZdaPv;
