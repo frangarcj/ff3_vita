@@ -322,14 +322,17 @@ void createSaveFile(size_t size) {
   free(buffer);
 }
 
+uint64_t j3 = 0;
+
 uint64_t getCurrentFrame(uint64_t j) {
 
   while (1) {
-    uint64_t j2 = sceKernelGetProcessTimeWide() / 1000000;
-    if (j2 != j) {
+    uint64_t j2 = sceKernelGetProcessTimeWide() * 3 / 100000;
+    if (j2 != j3) {
+      j3 = j2;
       return j2;
     }
-    sceKernelDelayThread(10);
+    sceKernelDelayThread(1000);
   }
 }
 
