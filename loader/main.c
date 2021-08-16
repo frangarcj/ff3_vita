@@ -704,8 +704,38 @@ int main_thread(SceSize args, void *argp) {
       coordinates[n * 2 + 1] = (float)touch.report[n].y / 1088.0f;
     }
 
+    SceCtrlData pad;
+    sceCtrlPeekBufferPositiveExt2(0, &pad, 1);
+
+    int mask = 0;
+
+    if (pad.buttons & SCE_CTRL_TRIANGLE)
+      mask |= 0x400;
+    if (pad.buttons & SCE_CTRL_SQUARE)
+      mask |= 0x200;
+    if (pad.buttons & SCE_CTRL_L1)
+      mask |= 0x100;
+    if (pad.buttons & SCE_CTRL_R1)
+      mask |= 0x800;
+    if (pad.buttons & SCE_CTRL_CROSS)
+      mask |= 0x1;
+    if (pad.buttons & SCE_CTRL_CIRCLE)
+      mask |= 0x4000;
+    if (pad.buttons & SCE_CTRL_START)
+      mask |= 0x8;
+    if (pad.buttons & SCE_CTRL_SELECT)
+      mask |= 0x4;
+    if (pad.buttons & SCE_CTRL_UP)
+      mask |= 0x40;
+    if (pad.buttons & SCE_CTRL_DOWN)
+      mask |= 0x80;
+    if (pad.buttons & SCE_CTRL_LEFT)
+      mask |= 0x20;
+    if (pad.buttons & SCE_CTRL_RIGHT)
+      mask |= 0x10;
+
     ff3_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
-              coordinates[2], coordinates[3], 0);
+              coordinates[2], coordinates[3], mask);
 
     ff3_render(fake_env, 0, this_width, this_height, 0);
     int res = eglSwapBuffers(eglDisplay, eglSurface);
