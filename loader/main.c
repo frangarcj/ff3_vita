@@ -611,13 +611,13 @@ int main_thread(SceSize args, void *argp) {
       mask |= 0x8;
     if (pad.buttons & SCE_CTRL_SELECT)
       mask |= 0x4;
-    if (pad.buttons & SCE_CTRL_UP)
+    if (pad.buttons & SCE_CTRL_UP || pad.ly < 80)
       mask |= 0x40;
-    if (pad.buttons & SCE_CTRL_DOWN)
+    if (pad.buttons & SCE_CTRL_DOWN || pad.ly > 170)
       mask |= 0x80;
-    if (pad.buttons & SCE_CTRL_LEFT)
+    if (pad.buttons & SCE_CTRL_LEFT || pad.lx < 80)
       mask |= 0x20;
-    if (pad.buttons & SCE_CTRL_RIGHT)
+    if (pad.buttons & SCE_CTRL_RIGHT || pad.lx > 170)
       mask |= 0x10;
 
     ff3_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
