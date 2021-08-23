@@ -24,7 +24,7 @@ jobs:
         cd /home/user
         git clone https://github.com/vitasdk/packages
         cd packages
-        ./build.sh libsndfile
+        sudo -H -u user bash -c './build.sh libsndfile'
         cd ..
         git clone https://github.com/frangarcj/opensles
         make -C opensles/libopensles install
