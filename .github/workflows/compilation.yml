@@ -15,6 +15,13 @@ jobs:
 
     - name: Install dependencies
       run: |
+        adduser user 
+        echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/user
+        chmod 0440 /etc/sudoers.d/user
+        mkdir -p /home/user
+        chown -R user /home/user
+        su - user
+        cd /home/user
         git clone https://github.com/vitasdk/packages
         cd packages
         ./build.sh libsndfile
