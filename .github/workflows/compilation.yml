@@ -15,12 +15,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        git clone https://github.com/frangarcj/opensles
-        make -C opensles/libopensles install
         git clone https://github.com/vitasdk/packages
         cd packages
         ./build.sh libsndfile
         cd ..
+        git clone https://github.com/frangarcj/opensles
+        make -C opensles/libopensles install
     - name: Get Information Variables
       id: core
       run: |
