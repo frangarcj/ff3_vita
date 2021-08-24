@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         git clone https://github.com/frangarcj/opensles
-        make -C opensles/libopensles install
+        make -C opensles/libopensles -j$(nproc) install
     - name: Get Information Variables
       id: core
       run: |
@@ -26,7 +26,7 @@ jobs:
         mkdir build
         cd build
         cmake ..
-        make
+        make -j$(nproc)
     - name: Upload artifacts
       if: ${{ success() }}
       uses: actions/upload-artifact@v2
