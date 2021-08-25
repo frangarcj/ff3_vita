@@ -55,7 +55,7 @@ Additionally, you'll need these libraries to be compiled as well with `-mfloat-a
 - [vitaGL](https://github.com/Rinnegatamante/vitaGL)
 
   - ````bash
-    make SOFTFP_ABI=1 DRAW_SPEEDHACK=1 install
+    make SOFTFP_ABI=1 NO_DEBUG=1 NO_TEX_COMBINER=1 MATH_SPEEDHACK=1 install
     ````
 
 - [opensles](https://github.com/frangarcj/opensles)
@@ -75,6 +75,8 @@ After all these requirements are met, you can compile the loader with the follow
 mkdir build && cd build
 cmake .. && make
 ```
+
+You can also use [vitasdk/vitasdk-softfp](https://hub.docker.com/r/vitasdk/vitasdk-softfp) with Docker. See [compilation.yml](https://github.com/frangarcj/ff3_vita/blob/master/.github/workflows/compilation.yml).
 
 ## Credits
 
