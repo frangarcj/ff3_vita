@@ -176,7 +176,6 @@ void toUtf8(const char *src, size_t length, char *dst, const char *src_encoding,
 
   uint16_t *temp = malloc(length * 3);
   u_setDataDirectory("app0:/");
-  printf("%s\n", u_getDataDirectory());
   conv = ucnv_open(src_encoding, &status);
 
   len = ucnv_toUChars(conv, temp, length * 3, src, length, &status);
