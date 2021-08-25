@@ -212,8 +212,6 @@ int GetStaticMethodID(void *env, void *class, const char *name,
 
 int CallBooleanMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
   switch (methodID) {
-  case IS_DEVICE_ANDROID_TV:
-    return isDeviceAndroidTV();
   default:
     return 0;
   }
@@ -275,6 +273,8 @@ void CallStaticVoidMethodV(void *env, void *obj, int methodID,
 int CallStaticBooleanMethodV(void *env, void *obj, int methodID,
                              uintptr_t *args) {
   switch (methodID) {
+  case IS_DEVICE_ANDROID_TV:
+    return isDeviceAndroidTV();
   default:
     return 0;
   }
