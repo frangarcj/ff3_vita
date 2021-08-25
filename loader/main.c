@@ -648,15 +648,15 @@ int main_thread(SceSize args, void *argp) {
     if (pad.buttons & SCE_CTRL_TRIANGLE)
       mask |= 0x400;
     if (pad.buttons & SCE_CTRL_SQUARE)
-      mask |= 0x200;
-    if (pad.buttons & SCE_CTRL_L1)
-      mask |= 0x100;
-    if (pad.buttons & SCE_CTRL_R1)
       mask |= 0x800;
+    if (pad.buttons & SCE_CTRL_L1)
+      mask |= 0x200;
+    if (pad.buttons & SCE_CTRL_R1)
+      mask |= 0x100;
     if (pad.buttons & SCE_CTRL_CROSS)
       mask |= 0x1;
     if (pad.buttons & SCE_CTRL_CIRCLE)
-      mask |= 0x4000;
+      mask |= 0x2;
     if (pad.buttons & SCE_CTRL_START)
       mask |= 0x8;
     if (pad.buttons & SCE_CTRL_SELECT)
