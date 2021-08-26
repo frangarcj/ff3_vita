@@ -8,8 +8,8 @@
 #define AUDIO_SAMPLE_RATE 44100
 #define AUDIO_SAMPLES_PER_BUF 8192
 
-#define DATA_PATH "ux0:data/ff3"
-#define SO_PATH DATA_PATH "/" "libff3.so"
+#define DATA_PATH "ux0:data/ff5"
+#define SO_PATH DATA_PATH "/" "libff5lib.so"
 #define CONFIG_FILE_PATH DATA_PATH "/" "options.cfg"
 
 #define DEF_SCREEN_W 960

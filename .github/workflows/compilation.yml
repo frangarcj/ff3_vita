@@ -33,12 +33,12 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v2
       with:
-        name: FF3-${{ steps.core.outputs.sha8 }}.vpk
-        path: build/FF3.vpk
+        name: FF5-${{ steps.core.outputs.sha8 }}.vpk
+        path: build/FF5.vpk
     - uses: svenstaro/upload-release-action@v2
       if: contains(github.ref,'refs/tags')
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: build/FF3.vpk
+        file: build/FF5.vpk
         overwrite: true
         tag: ${{ github.ref }}

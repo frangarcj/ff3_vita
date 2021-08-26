@@ -21,8 +21,8 @@
 #include "config.h"
 #include "dialog.h"
 
-#define SAVE_FILENAME "ux0:/data/ff3"
-#define OBB_FILE "ux0:/data/ff3/main.obb"
+#define SAVE_FILENAME "ux0:/data/ff5"
+#define OBB_FILE "ux0:/data/ff5/main.obb"
 #define FONT_FILE "app0:/NotoSansJP-Regular.ttf"
 
 unsigned char *header = NULL;

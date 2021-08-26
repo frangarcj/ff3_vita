@@ -8,17 +8,17 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   endif()
 endif()
 
-project(FF3.elf C CXX)
+project(FF5.elf C CXX)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 set(VITA_APP_NAME "Final Fantasy 3")
-set(VITA_TITLEID  "FF3000000")
+set(VITA_TITLEID  "FF5000000")
 set(VITA_VERSION  "01.00")
 set(VITA_MKSFOEX_FLAGS "-d ATTRIBUTE2=12")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wl,-q,--wrap,memcpy,--wrap,memmove,--wrap,memset -Wall -O3 -mfloat-abi=softfp")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
 
-add_executable(FF3.elf
+add_executable(FF5.elf
   loader/main.c
   loader/dialog.c
   loader/so_util.c
@@ -27,7 +27,7 @@ add_executable(FF3.elf
   loader/stb_truetype.c
 )
 
-target_link_libraries(FF3.elf
+target_link_libraries(FF5.elf
   m
   stdc++
   vitaGL
@@ -59,7 +59,7 @@ target_link_libraries(FF3.elf
   -Wl,--no-whole-archive
 )
 
-vita_create_self(eboot.bin FF3.elf UNSAFE)
+vita_create_self(eboot.bin FF5.elf UNSAFE)
 
 add_executable(companion
   companion/main.cpp
@@ -84,7 +84,7 @@ target_link_libraries(companion
 
 vita_create_self(companion.bin companion UNSAFE)
 
-vita_create_vpk(FF3.vpk ${VITA_TITLEID} eboot.bin
+vita_create_vpk(FF5.vpk ${VITA_TITLEID} eboot.bin
   VERSION ${VITA_VERSION}
   NAME ${VITA_APP_NAME}
   FILE ${CMAKE_SOURCE_DIR}/sce_sys/icon0.png sce_sys/icon0.png

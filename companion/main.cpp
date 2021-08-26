@@ -18,7 +18,7 @@ void *__wrap_memset(void *s, int c, size_t n) {
 }
 }
 
-#define CONFIG_FILE_PATH "ux0:data/ff3/options.cfg"
+#define CONFIG_FILE_PATH "ux0:data/ff5/options.cfg"
 
 #define RESOLUTION_NUM 3
 const char *ResolutionName[RESOLUTION_NUM] = {

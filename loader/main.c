@@ -91,7 +91,7 @@ int _newlib_heap_size_user = MEMORY_NEWLIB_MB * 1024 * 1024;
 
 int _opensles_user_freq = 32000;
 
-static so_module ff3_mod;
+static so_module ff5_mod;
 
 void *__wrap_memcpy(void *dest, const void *src, size_t n) {
   return sceClibMemcpy(dest, src, n);
@@ -617,10 +617,10 @@ int main_thread(SceSize args, void *argp) {
     break;
   }
 
-  int (*ff3_render)(char *, int, int, int, int) =
-      (void *)so_symbol(&ff3_mod, "render");
-  int (*ff3_touch)(int, int, int, int, float, float, float, float,
-                   unsigned int) = (void *)so_symbol(&ff3_mod, "touch");
+  int (*ff5_render)(char *, int, int, int, int) =
+      (void *)so_symbol(&ff5_mod, "render");
+  int (*ff5_touch)(int, int, int, int, float, float, float, float,
+                   unsigned int) = (void *)so_symbol(&ff5_mod, "touch");
 
   readHeader();
   setup_viewport(has_low_res ? DEF_SCREEN_W : SCREEN_W,
@@ -670,10 +670,10 @@ int main_thread(SceSize args, void *argp) {
     if (pad.buttons & SCE_CTRL_RIGHT || pad.lx > 170)
       mask |= 0x10;
 
-    ff3_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
+    ff5_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
               coordinates[2], coordinates[3], mask);
 
-    ff3_render(fake_env, 0, this_width, this_height, 0);
+    ff5_render(fake_env, 0, this_width, this_height, 0);
     vglSwapBuffers(GL_FALSE);
   }
 
@@ -682,7 +682,7 @@ int main_thread(SceSize args, void *argp) {
 
 void patch_game(void) {
 #ifdef DEBUG
-  hook_thumb(ff3_mod.text_base + 0xe58b6, (uintptr_t)&printf);
+  hook_thumb(ff5_mod.text_base + 0xe58b6, (uintptr_t)&printf);
 #endif
 }
 
@@ -1005,15 +1005,15 @@ int main(int argc, char *argv[]) {
 
   InitJNIEnv();
 
-  if (so_load(&ff3_mod, SO_PATH, LOAD_ADDRESS) < 0)
+  if (so_load(&ff5_mod, SO_PATH, LOAD_ADDRESS) < 0)
     fatal_error("Error could not load %s.", SO_PATH);
 
-  so_relocate(&ff3_mod);
-  so_resolve(&ff3_mod, default_dynlib, sizeof(default_dynlib), 0);
+  so_relocate(&ff5_mod);
+  so_resolve(&ff5_mod, default_dynlib, sizeof(default_dynlib), 0);
   patch_game();
-  so_flush_caches(&ff3_mod);
+  so_flush_caches(&ff5_mod);
 
-  so_initialize(&ff3_mod);
+  so_initialize(&ff5_mod);
 
   SceUID thid =
       sceKernelCreateThread("main_thread", (SceKernelThreadEntry)main_thread,
