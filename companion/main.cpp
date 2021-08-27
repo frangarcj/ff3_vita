@@ -68,7 +68,7 @@ void loadOptions() {
       else if (strcmp("antialiasing", buffer) == 0) options.msaa = value;
     }
   } else {
-    options.res = 544;
+    options.res = 0;
     options.bilinear = 0;
     options.lang = 0;
     options.msaa = 2;
