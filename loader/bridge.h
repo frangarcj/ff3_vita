@@ -39,4 +39,8 @@ jni_bytearray *loadFileSize(int size);
 
 void loadCompanionApp();
 
+void playMovie();
+uint8_t getMovieState();
+void stopMovie();
+
 #endif

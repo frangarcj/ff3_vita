@@ -100,6 +100,14 @@ vita_create_vpk(FF5.vpk ${VITA_TITLEID} eboot.bin
        ${CMAKE_SOURCE_DIR}/icudt59l/unames.icu icudt59l/unames.icu
        ${CMAKE_SOURCE_DIR}/icudt59l/ibm-943_P15A-2003.cnv icudt59l/ibm-943_P15A-2003.cnv
        ${CMAKE_SOURCE_DIR}/icudt59l/ibm-5348_P100-1997.cnv icudt59l/ibm-5348_P100-1997.cnv
+       ${CMAKE_SOURCE_DIR}/shaders/1_Negative_f.cg shaders/1_Negative_f.cg
+       ${CMAKE_SOURCE_DIR}/shaders/1_Negative_v.cg shaders/1_Negative_v.cg
+       ${CMAKE_SOURCE_DIR}/shaders/2_FXAA_f.cg shaders/2_FXAA_f.cg
+       ${CMAKE_SOURCE_DIR}/shaders/2_FXAA_v.cg shaders/2_FXAA_v.cg
+       ${CMAKE_SOURCE_DIR}/shaders/3_Sepia_f.cg shaders/3_Sepia_f.cg
+       ${CMAKE_SOURCE_DIR}/shaders/3_Sepia_v.cg shaders/3_Sepia_v.cg
+       ${CMAKE_SOURCE_DIR}/shaders/4_Greyscale_f.cg shaders/4_Greyscale_f.cg
+       ${CMAKE_SOURCE_DIR}/shaders/4_Greyscale_v.cg shaders/4_Greyscale_v.cg
 )
 
 add_custom_target(copy

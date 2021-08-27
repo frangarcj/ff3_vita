@@ -50,6 +50,7 @@ typedef struct {
   int bilinear;
   int lang;
   int msaa;
+  int postfx;
 } config_opts;
 config_opts options;
 
@@ -66,12 +67,14 @@ void loadOptions() {
       else if (strcmp("bilinear", buffer) == 0) options.bilinear = value;
       else if (strcmp("language", buffer) == 0) options.lang = value;
       else if (strcmp("antialiasing", buffer) == 0) options.msaa = value;
+      else if (strcmp("postfx", buffer) == 0) options.postfx = value;
     }
   } else {
     options.res = 0;
     options.bilinear = 0;
     options.lang = 0;
     options.msaa = 2;
+    options.postfx = 0;
   }
 
   bilinear_filter = options.bilinear ? true : false;
@@ -87,6 +90,7 @@ void saveOptions(void) {
     fprintf(config, "%s=%d\n", "bilinear", options.bilinear);
     fprintf(config, "%s=%d\n", "language", options.lang);
 	fprintf(config, "%s=%d\n", "antialiasing", options.msaa);
+    fprintf(config, "%s=%d\n", "postfx", options.postfx);
     fclose(config);
   }
 }
@@ -96,13 +100,15 @@ const char *options_descs[] = {
   "When enabled, forces bilinear filtering for all game's textures.\nThe default value is: Disabled.", // bilinear
   "Anti-Aliasing is a technique used to reduce graphical artifacts surrounding 3D models. Greatly improves graphics quality at the cost of some GPU power.\nThe default value is: MSAA 4x.", // antialiasing
   "Language to use for the game. When Auto is used, language will be decided based on system language.\nThe default value is: Auto.", // language
+  "Enables usage of a post processing effect through shaders. May impact performances.\nThe default value is: Disabled.", // postfx
 };
 
 enum {
   OPT_RESOLUTION,
   OPT_BILINEAR,
   OPT_ANTIALIASING,
-  OPT_LANGUAGE
+  OPT_LANGUAGE,
+  OPT_POSTFX
 };
 
 const char *desc = nullptr;
@@ -125,6 +131,30 @@ int main(int argc, char *argv[]) {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
   ImGui::GetIO().MouseDrawCursor = false;
+  
+  // Generating PostFX array
+  char none_str[5];
+  strcpy(none_str, "None");
+  char *PostFxName[64] = {0};
+  PostFxName[0] = none_str;
+  int PostFxNum = 1;
+  SceIoDirent d;
+  SceUID fd = sceIoDopen("app0:shaders");
+  while (sceIoDread(fd, &d) > 0) {
+    int n;
+    char name[64];
+    sscanf(d.d_name, "%d_%s", &n, name);
+	strcpy(name, strchr(d.d_name, '_') + 1);
+	char *end_of_name = strchr(name, '_');
+	end_of_name[0] = 0;
+    if (PostFxName[n] == NULL) {
+      PostFxName[n] = (char *)malloc(strlen(name) + 1);
+      strcpy(PostFxName[n], name);
+      if (PostFxNum <= n)
+        PostFxNum = n + 1;
+    }
+  }
+  sceIoDclose(fd);
 
   while (exit_code == 0xDEAD) {
     desc = nullptr;
@@ -170,11 +200,25 @@ int main(int argc, char *argv[]) {
     }
     SetDescription(OPT_ANTIALIASING);
 
+    ImGui::Text("PostFX Effect:"); ImGui::SameLine();
+    if (ImGui::BeginCombo("##combo2", PostFxName[options.postfx])) {
+      for (int n = 0; n < PostFxNum; n++) {
+        bool is_selected = options.postfx == n;
+        if (ImGui::Selectable(PostFxName[n], is_selected))
+          options.postfx = n;
+        SetDescription(OPT_POSTFX);
+        if (is_selected)
+          ImGui::SetItemDefaultFocus();
+      }
+      ImGui::EndCombo();
+    }
+    SetDescription(OPT_POSTFX);
+
     ImGui::Separator();
     ImGui::TextColored(ImVec4(255, 255, 0, 255), "Misc");
 
     ImGui::Text("Language:"); ImGui::SameLine();
-    if (ImGui::BeginCombo("##combo2", LanguageName[options.lang])) {
+    if (ImGui::BeginCombo("##combo3", LanguageName[options.lang])) {
       for (int n = 0; n < LANGUAGES_NUM; n++) {
         bool is_selected = options.lang == n;
         if (ImGui::Selectable(LanguageName[n], is_selected))

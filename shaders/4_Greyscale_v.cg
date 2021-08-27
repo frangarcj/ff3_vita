@@ -1,0 +1,9 @@
+void main(
+	float2 position,
+	float2 texcoord,
+	out float4 vPosition : POSITION,
+	out float2 vTexcoord : TEXCOORD0)
+{
+	vPosition = float4(position, 1.f, 1.f);
+	vTexcoord = float2(texcoord.x, 1 - texcoord.y);
+}

@@ -56,7 +56,7 @@ Additionally, you'll need these libraries to be compiled as well with `-mfloat-a
 - [vitaGL](https://github.com/Rinnegatamante/vitaGL)
 
   - ````bash
-    make SOFTFP_ABI=1 NO_DEBUG=1 NO_TEX_COMBINER=1 MATH_SPEEDHACK=1 install
+    make SOFTFP_ABI=1 NO_DEBUG=1 NO_TEX_COMBINER=1 MATH_SPEEDHACK=1 PHYCONT_ON_DEMAND=1 install
     ````
 
 - [opensles](https://github.com/frangarcj/opensles)
