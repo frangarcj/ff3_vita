@@ -20,6 +20,7 @@ typedef struct {
   int bilinear;
   int lang;
   int msaa;
+  int postfx;
 } config_opts;
 extern config_opts options;
 

@@ -77,12 +77,15 @@ void loadOptions() {
         options.lang = value;
       else if (strcmp("antialiasing", buffer) == 0)
         options.msaa = value;
+      else if (strcmp("postfx", buffer) == 0)
+        options.postfx = value;
     }
   } else {
     options.res = 544;
     options.bilinear = 0;
     options.lang = 0;
     options.msaa = 2;
+    options.postfx = 0;
   }
 
   switch (options.res) {
@@ -624,6 +627,27 @@ void setup_viewport(int width, int height) {
   glViewport(x, y, this_width, this_height);
 }
 
+GLuint frag, vert, fb, fb_tex, postfx_prog;
+uint16_t *postfx_indices;
+float *postfx_texcoords, *postfx_vertices;
+
+void loadShader(int is_vertex, char *file) {
+  SceIoStat st;
+  sceIoGetstat(file, &st);
+  char *code = (char*)malloc(st.st_size);
+
+  FILE *f = fopen(file, "rb");
+  fread(code, 1, st.st_size, f);
+  fclose(f);
+
+  GLint len = st.st_size - 1;
+  GLuint shad = is_vertex ? vert : frag;
+  glShaderSource(shad, 1, &code, &len);
+  glCompileShader(shad);
+
+  free(code);
+}
+
 int main_thread(SceSize args, void *argp) {
 
   int has_low_res;
@@ -644,6 +668,36 @@ int main_thread(SceSize args, void *argp) {
                                   MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024,
                                   SCE_GXM_MULTISAMPLE_4X);
     break;
+  }
+
+  if (options.postfx) {
+    glGenTextures(1, &fb_tex);
+    glBindTexture(GL_TEXTURE_2D, fb_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_W, SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glGenFramebuffers(1, &fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, fb_tex, 0);
+
+    frag = glCreateShader(GL_FRAGMENT_SHADER);
+    vert = glCreateShader(GL_VERTEX_SHADER);
+    char path[512];
+    SceIoDirent d;
+    SceUID fd = sceIoDopen("app0:shaders");
+    while (sceIoDread(fd, &d) > 0) {
+      sprintf(path, "%d_", options.postfx);
+      if (strstr(d.d_name, path)) {
+        sprintf(path, "app0:shaders/%s", d.d_name);
+        loadShader(strncmp(&d.d_name[strlen(d.d_name) - 5], "_f.cg", 5) == 0 ? 0 : 1, path);
+      }
+    }
+    sceIoDclose(fd);
+
+    postfx_prog = glCreateProgram();
+    glAttachShader(postfx_prog, frag);
+    glAttachShader(postfx_prog, vert);
+    glBindAttribLocation(postfx_prog, 0, "position");
+    glBindAttribLocation(postfx_prog, 1, "texcoord");
+    glLinkProgram(postfx_prog);
   }
 
   int (*ff3_render)(char *, int, int, int, int) =
@@ -703,6 +757,18 @@ int main_thread(SceSize args, void *argp) {
               coordinates[2], coordinates[3], mask);
 
     ff3_render(fake_env, 0, this_width, this_height, 0);
+    if (options.postfx) {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, fb_tex);
+        glUseProgram(postfx_prog);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glUseProgram(0);
+        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    }
     vglSwapBuffers(GL_FALSE);
   }
 
