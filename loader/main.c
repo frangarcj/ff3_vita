@@ -44,6 +44,20 @@
 #include "main.h"
 #include "so_util.h"
 
+float postfx_pos[8] = {
+  -1.0f, 1.0f,
+  -1.0f, -1.0f,
+   1.0f, 1.0f,
+   1.0f, -1.0f
+};
+
+float postfx_texcoord[8] = {
+  0.0f, 0.0f,
+  0.0f, 1.0f,
+  1.0f, 0.0f,
+  1.0f, 1.0f
+};
+
 int SCREEN_W = DEF_SCREEN_W;
 int SCREEN_H = DEF_SCREEN_H;
 
@@ -165,6 +179,9 @@ enum MethodIDs {
   CREATE_EDIT_TEXT,
   GET_EDIT_TEXT,
   START_DOWNLOAD,
+  PLAY_MOVIE,
+  GET_MOVIE_STATE,
+  STOP_MOVIE
 } MethodIDs;
 
 typedef struct {
@@ -184,7 +201,11 @@ static NameToMethodID name_to_method_ids[] = {
     {"drawFont", DRAW_FONT},
     {"createEditText", CREATE_EDIT_TEXT},
     {"getEditText", GET_EDIT_TEXT},
-    {"startDownload", START_DOWNLOAD}};
+    {"startDownload", START_DOWNLOAD},
+    {"playMovie", PLAY_MOVIE},
+    {"getMovieState", GET_MOVIE_STATE},
+    {"stopMovie", STOP_MOVIE},
+};
 
 int GetMethodID(void *env, void *class, const char *name, const char *sig) {
 
@@ -265,6 +286,12 @@ void CallStaticVoidMethodV(void *env, void *obj, int methodID,
   case START_DOWNLOAD:
     loadCompanionApp();
     break;
+  case PLAY_MOVIE:
+    playMovie();
+    break;
+  case STOP_MOVIE:
+    stopMovie();
+    break;
   default:
     return;
   }
@@ -275,6 +302,8 @@ int CallStaticBooleanMethodV(void *env, void *obj, int methodID,
   switch (methodID) {
   case IS_DEVICE_ANDROID_TV:
     return isDeviceAndroidTV();
+  case GET_MOVIE_STATE:
+    return getMovieState();
   default:
     return 0;
   }

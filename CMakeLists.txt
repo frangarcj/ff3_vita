@@ -47,6 +47,7 @@ target_link_libraries(FF3.elf
   ScePower_stub
   SceTouch_stub
   SceVshBridge_stub
+  SceAvPlayer_stub
   OpenSLES
   sndfile
   SDL
