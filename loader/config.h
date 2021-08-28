@@ -15,6 +15,8 @@
 #define DEF_SCREEN_W 960
 #define DEF_SCREEN_H 544
 
+#define DEBUG 1
+
 typedef struct {
   int res;
   int bilinear;

@@ -165,6 +165,12 @@ enum MethodIDs {
   CREATE_EDIT_TEXT,
   GET_EDIT_TEXT,
   START_DOWNLOAD,
+  GET_DATAPATH_BYTES,
+  GET_STORAGEPATH_BYTES,
+  GET_PACK_FILE_NAME,
+  GET_FILE_CODE,
+  IS_FILE_EXIST,
+  GET_KEY_EVENT
 } MethodIDs;
 
 typedef struct {
@@ -184,7 +190,13 @@ static NameToMethodID name_to_method_ids[] = {
     {"drawFont", DRAW_FONT},
     {"createEditText", CREATE_EDIT_TEXT},
     {"getEditText", GET_EDIT_TEXT},
-    {"startDownload", START_DOWNLOAD}};
+    {"startDownload", START_DOWNLOAD},
+    {"getDataPathBytes", GET_DATAPATH_BYTES},
+    {"getStoragePathBytes", GET_STORAGEPATH_BYTES},
+    {"getPackFileName", GET_PACK_FILE_NAME},
+    {"GetFileCode", GET_FILE_CODE},
+    {"isFileExist", IS_FILE_EXIST},
+    {"getKeyEvent", GET_KEY_EVENT}};
 
 int GetMethodID(void *env, void *class, const char *name, const char *sig) {
 
@@ -248,6 +260,12 @@ void *CallStaticObjectMethodV(void *env, void *obj, int methodID,
     return drawFont((char *)args[0], args[1], args[2], args[3]);
   case GET_EDIT_TEXT:
     return getEditText();
+  case GET_DATAPATH_BYTES:
+    return getSaveFileName();
+  case GET_STORAGEPATH_BYTES:
+    return getSaveFileName();
+  case GET_PACK_FILE_NAME:
+    return getPackFileName();
   default:
     return NULL;
   }
@@ -275,6 +293,8 @@ int CallStaticBooleanMethodV(void *env, void *obj, int methodID,
   switch (methodID) {
   case IS_DEVICE_ANDROID_TV:
     return isDeviceAndroidTV();
+  case IS_FILE_EXIST:
+    return isFileExist((char *)args[0]);
   default:
     return 0;
   }
@@ -294,6 +314,10 @@ int CallStaticIntMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
   switch (methodID) {
   case GET_LANGUAGE:
     return getCurrentLanguage();
+  case GET_FILE_CODE:
+    return 20;
+  case GET_KEY_EVENT:
+    return getKeyEvent();
   default:
     return 0;
   }
@@ -307,7 +331,10 @@ float CallStaticFloatMethodV(void *env, void *obj, int methodID,
   }
 }
 
-void *FindClass(void) { return (void *)0x41414141; }
+void *FindClass(void *env, char *name) {
+  // printf("WEEEE %s\n", name);
+  return (void *)0x41414141;
+}
 
 void DeleteLocalRef(void *env, void *localRef) { return; }
 
@@ -372,16 +399,24 @@ void SetByteArrayRegion(void *env, jni_bytearray *array, size_t start,
   memcpy(array->elements, &buf[start], len);
 }
 
+int EnsureLocalCapacity(void *env, int capacity) {
+  printf("EnsureLocalCapacity %d\n", capacity);
+  return 0;
+}
 static char fake_env[0x1000];
 
 void InitJNIEnv(void) {
-  memset(fake_env, 'A', sizeof(fake_env));
+  // memset(fake_env, 'A', sizeof(fake_env));
+  for (int n = 0; n < sizeof(fake_env); n = n + 4) {
+    *(uintptr_t *)(fake_env + n) = n;
+  }
   *(uintptr_t *)(fake_env + 0x00) =
       (uintptr_t)fake_env; // just point to itself...
   *(uintptr_t *)(fake_env + 0x18) = (uintptr_t)FindClass;
   // *(uintptr_t *)(fake_env + 0x44) = (uintptr_t)ret0; // ExceptionClear
-  // *(uintptr_t *)(fake_env + 0x54) = (uintptr_t)NewGlobalRef;
+  *(uintptr_t *)(fake_env + 0x54) = (uintptr_t)ret1; // NewGlobalRef;
   *(uintptr_t *)(fake_env + 0x5C) = (uintptr_t)DeleteLocalRef;
+  *(uintptr_t *)(fake_env + 0x68) = (uintptr_t)EnsureLocalCapacity;
   *(uintptr_t *)(fake_env + 0x74) = (uintptr_t)NewObjectV;
   *(uintptr_t *)(fake_env + 0x84) = (uintptr_t)GetMethodID;
   *(uintptr_t *)(fake_env + 0x8C) = (uintptr_t)CallObjectMethodV;
@@ -617,18 +652,25 @@ int main_thread(SceSize args, void *argp) {
     break;
   }
 
-  int (*ff5_render)(char *, int, int, int, int) =
-      (void *)so_symbol(&ff5_mod, "render");
-  int (*ff5_touch)(int, int, int, int, float, float, float, float,
-                   unsigned int) = (void *)so_symbol(&ff5_mod, "touch");
+  int (*ff5_render)(void *) = (void *)so_symbol(
+      &ff5_mod,
+      "Java_com_square_1enix_android_1googleplay_FFV_1GP_MainActivity_render");
+  int (*ff5_touch)(void *, int, int, float, float) =
+      (void *)so_symbol(&ff5_mod, "Java_com_square_1enix_android_1googleplay_"
+                                  "FFV_1GP_MainActivity_touch");
+  int (*ff5_init)(void *) = (void *)so_symbol(
+      &ff5_mod,
+      "Java_com_square_1enix_android_1googleplay_FFV_1GP_MainActivity_init");
+  int (*ff5_sizeChange)(void *, void *, int, int) =
+      (void *)so_symbol(&ff5_mod, "Java_com_square_1enix_android_1googleplay_"
+                                  "FFV_1GP_MainActivity_sizeChange");
 
-  readHeader();
-  setup_viewport(has_low_res ? DEF_SCREEN_W : SCREEN_W,
+  ff5_init(fake_env);
+  ff5_sizeChange(NULL, NULL, has_low_res ? DEF_SCREEN_W : SCREEN_W,
                  has_low_res ? DEF_SCREEN_H : SCREEN_H);
   while (1) {
 
     SceTouchData touch;
-    float coordinates[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     int n;
 
     sceTouchPeek(0, &touch, 1);
@@ -636,55 +678,21 @@ int main_thread(SceSize args, void *argp) {
     int reportNum = touch.reportNum > 2 ? 2 : touch.reportNum;
 
     for (n = 0; n < reportNum; n++) {
-      coordinates[n * 2] = (float)touch.report[n].x / 1920.0f;
-      coordinates[n * 2 + 1] = (float)touch.report[n].y / 1088.0f;
+      ff5_touch(fake_env, n, n, (float)touch.report[n].x / 1920.0f,
+                (float)touch.report[n].y / 1088.0f);
     }
 
-    SceCtrlData pad;
-    sceCtrlPeekBufferPositiveExt2(0, &pad, 1);
+    // ff5_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
+    //        coordinates[2], coordinates[3], mask);
 
-    int mask = 0;
-
-    if (pad.buttons & SCE_CTRL_TRIANGLE)
-      mask |= 0x400;
-    if (pad.buttons & SCE_CTRL_SQUARE)
-      mask |= 0x800;
-    if (pad.buttons & SCE_CTRL_L1)
-      mask |= 0x200;
-    if (pad.buttons & SCE_CTRL_R1)
-      mask |= 0x100;
-    if (pad.buttons & SCE_CTRL_CROSS)
-      mask |= 0x1;
-    if (pad.buttons & SCE_CTRL_CIRCLE)
-      mask |= 0x2;
-    if (pad.buttons & SCE_CTRL_START)
-      mask |= 0x8;
-    if (pad.buttons & SCE_CTRL_SELECT)
-      mask |= 0x4;
-    if (pad.buttons & SCE_CTRL_UP || pad.ly < 80)
-      mask |= 0x40;
-    if (pad.buttons & SCE_CTRL_DOWN || pad.ly > 170)
-      mask |= 0x80;
-    if (pad.buttons & SCE_CTRL_LEFT || pad.lx < 80)
-      mask |= 0x20;
-    if (pad.buttons & SCE_CTRL_RIGHT || pad.lx > 170)
-      mask |= 0x10;
-
-    ff5_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
-              coordinates[2], coordinates[3], mask);
-
-    ff5_render(fake_env, 0, this_width, this_height, 0);
+    ff5_render(fake_env);
     vglSwapBuffers(GL_FALSE);
   }
 
   return 0;
 }
 
-void patch_game(void) {
-#ifdef DEBUG
-  hook_thumb(ff5_mod.text_base + 0xe58b6, (uintptr_t)&printf);
-#endif
-}
+void patch_game(void) {}
 
 extern void *_ZdaPv;
 extern void *_ZdlPv;
@@ -692,23 +700,29 @@ extern void *_Znaj;
 extern void *_Znwj;
 
 extern void *__aeabi_atexit;
-extern void *__aeabi_d2ulz;
-extern void *__aeabi_dcmpgt;
-extern void *__aeabi_dmul;
-extern void *__aeabi_f2d;
 extern void *__aeabi_fadd;
 extern void *__aeabi_fsub;
 extern void *__aeabi_idiv;
-extern void *__aeabi_idivmod;
-extern void *__aeabi_l2d;
 extern void *__aeabi_l2f;
-extern void *__aeabi_ldivmod;
-extern void *__aeabi_uidiv;
-extern void *__aeabi_uidivmod;
 extern void *__aeabi_uldivmod;
 extern void *__cxa_atexit;
 extern void *__cxa_finalize;
 extern void *__stack_chk_fail;
+extern void *__cxa_pure_virtual;
+extern void *__aeabi_memclr4;
+extern void *__aeabi_memclr8;
+extern void *__aeabi_memmove;
+extern void *__aeabi_memmove4;
+extern void *__aeabi_memcpy;
+extern void *__aeabi_memcpy4;
+extern void *__aeabi_memcpy8;
+extern void *__aeabi_memmove8;
+extern void *__aeabi_memclr;
+extern void *__cxa_guard_acquire;
+extern void *__cxa_guard_release;
+extern void *__aeabi_memset4;
+extern void *open;
+extern void *sincos;
 
 static int __stack_chk_guard_fake = 0x42424242;
 static FILE __sF_fake[0x100][3];
@@ -761,6 +775,24 @@ void glTexParameteriHook(GLenum target, GLenum pname, GLint param) {
     }
   }
   glTexParameteri(target, pname, param);
+}
+
+FILE *fopen_fake(const char *filename, const char *mode) {
+  FILE *res = fopen(filename, mode);
+  printf("%s %s %p %d \n", filename, mode, res, errno);
+  return res;
+}
+
+int clock_gettime(clockid_t clk_id, struct timespec *tp) {
+  struct timeval tv;
+  int retval = -1;
+
+  retval = gettimeofday(&tv, NULL);
+  if (retval == 0)
+    /* Convert into `timespec'.  */
+    TIMEVAL_TO_TIMESPEC(&tv, tp);
+
+  return retval;
 }
 
 static so_default_dynlib default_dynlib[] = {
@@ -831,19 +863,9 @@ static so_default_dynlib default_dynlib[] = {
     {"_Znwj", (uintptr_t)&_Znwj},
     {"_toupper_tab_", (uintptr_t)&_toupper_tab_},
     {"__aeabi_atexit", (uintptr_t)&__aeabi_atexit},
-    {"__aeabi_d2ulz", (uintptr_t)&__aeabi_d2ulz},
-    {"__aeabi_dcmpgt", (uintptr_t)&__aeabi_dcmpgt},
-    {"__aeabi_dmul", (uintptr_t)&__aeabi_dmul},
-    {"__aeabi_f2d", (uintptr_t)&__aeabi_f2d},
     {"__aeabi_fadd", (uintptr_t)&__aeabi_fadd},
     {"__aeabi_fsub", (uintptr_t)&__aeabi_fsub},
-    {"__aeabi_idiv", (uintptr_t)&__aeabi_idiv},
-    {"__aeabi_idivmod", (uintptr_t)&__aeabi_idivmod},
-    {"__aeabi_l2d", (uintptr_t)&__aeabi_l2d},
     {"__aeabi_l2f", (uintptr_t)&__aeabi_l2f},
-    {"__aeabi_ldivmod", (uintptr_t)&__aeabi_ldivmod},
-    {"__aeabi_uidiv", (uintptr_t)&__aeabi_uidiv},
-    {"__aeabi_uidivmod", (uintptr_t)&__aeabi_uidivmod},
     {"__aeabi_uldivmod", (uintptr_t)&__aeabi_uldivmod},
     {"__android_log_print", (uintptr_t)&__android_log_print},
     {"__assert2", (uintptr_t)&__assert2},
@@ -959,6 +981,70 @@ static so_default_dynlib default_dynlib[] = {
     {"time", (uintptr_t)&time},
     {"usleep", (uintptr_t)&usleep},
     {"vsnprintf", (uintptr_t)&vsnprintf},
+    {"__cxa_pure_virtual", (uintptr_t)&__cxa_pure_virtual},
+    {"glFogf", (uintptr_t)&glFogf},
+    {"__aeabi_memclr4", (uintptr_t)&__aeabi_memclr4},
+    {"__aeabi_memmove", (uintptr_t)&__aeabi_memmove},
+    {"__aeabi_memclr8", (uintptr_t)&__aeabi_memclr8},
+    {"__aeabi_memcpy", (uintptr_t)&__aeabi_memcpy},
+    {"__aeabi_memmove4", (uintptr_t)&__aeabi_memmove4},
+    {"__aeabi_memmove8", (uintptr_t)&__aeabi_memmove8},
+    {"rint", (uintptr_t)&rint},
+    {"__aeabi_memcpy4", (uintptr_t)&__aeabi_memcpy4},
+    {"atan", (uintptr_t)&atan},
+    {"floor", (uintptr_t)&floor},
+    {"exit", (uintptr_t)&exit},
+    {"toupper", (uintptr_t)&toupper},
+    {"exp", (uintptr_t)&exp},
+    {"acos", (uintptr_t)&acos},
+    {"log", (uintptr_t)&log},
+    {"sincos", (uintptr_t)&sincos},
+    {"ceil", (uintptr_t)&ceil},
+    {"ldexp", (uintptr_t)&ldexp},
+    {"pow", (uintptr_t)&pow},
+    {"rintf", (uintptr_t)&rintf},
+    {"__aeabi_memcpy8", (uintptr_t)&__aeabi_memcpy8},
+    {"__aeabi_memclr", (uintptr_t)&__aeabi_memclr},
+    {"fgetpos", (uintptr_t)&fgetpos},
+    {"__cxa_pure_virtual", (uintptr_t)&__cxa_pure_virtual},
+    {"glGetString", (uintptr_t)&glGetString},
+    {"glFlush", (uintptr_t)&glFlush},
+    {"glFinish", (uintptr_t)&glFinish},
+    {"glViewport", (uintptr_t)&glViewport},
+    {"glScissor", (uintptr_t)&glScissor},
+    {"glColor4f", (uintptr_t)&glColor4f},
+    {"glClearDepthf", (uintptr_t)&glClearDepthf},
+    {"glTexEnvi", (uintptr_t)&glTexEnvi},
+    {"glTexEnvfv", (uintptr_t)&glTexEnvfv},
+    {"glFogf", (uintptr_t)&glFogf},
+    {"glFogfv", (uintptr_t)&glFogfv},
+    {"glNormalPointer", (uintptr_t)&glNormalPointer},
+    {"glDrawElements", (uintptr_t)&glDrawElements},
+    {"glLineWidth", (uintptr_t)&glLineWidth},
+    {"gettid", (uintptr_t)&gettid},
+    {"logf", (uintptr_t)&logf},
+    {"glDeleteFramebuffers", (uintptr_t)&glDeleteFramebuffers},
+    {"glDeleteRenderbuffers", (uintptr_t)&glDeleteRenderbuffers},
+    {"glCompressedTexImage2D", (uintptr_t)&glCompressedTexImage2D},
+    {"glIsTexture", (uintptr_t)&glIsTexture},
+    {"__cxa_guard_acquire", (uintptr_t)&__cxa_guard_acquire},
+    {"__cxa_guard_release", (uintptr_t)&__cxa_guard_release},
+    {"ceilf", (uintptr_t)&ceilf},
+    {"glBindFramebuffer", (uintptr_t)&glBindFramebuffer},
+    {"glCheckFramebufferStatus", (uintptr_t)&glCheckFramebufferStatus},
+    {"clock_gettime", (uintptr_t)&clock_gettime},
+    {"rand", (uintptr_t)&rand},
+    {"srand", (uintptr_t)&srand},
+    {"vsprintf", (uintptr_t)&vsprintf},
+    {"__aeabi_memset4", (uintptr_t)&__aeabi_memset4},
+    {"strstr", (uintptr_t)&strstr},
+    {"gmtime", (uintptr_t)&gmtime},
+    {"roundf", (uintptr_t)&roundf},
+    {"open", (uintptr_t)&open},
+    {"close", (uintptr_t)&close},
+    {"puts", (uintptr_t)&puts},
+    {"fflush", (uintptr_t)&fflush},
+    {"dladdr", (uintptr_t)&ret1},
 };
 
 int check_kubridge(void) {

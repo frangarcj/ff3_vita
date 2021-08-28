@@ -12,6 +12,8 @@ typedef struct {
 jni_bytearray *loadFile(char *str);
 jni_bytearray *loadRawFile(char *str);
 jni_bytearray *getSaveFileName();
+jni_bytearray *getPackFileName();
+int isFileExist(char *str);
 void createSaveFile(size_t size);
 uint64_t getCurrentFrame(uint64_t j);
 int readHeader();
@@ -23,12 +25,14 @@ typedef struct {
 
 jni_intarray *loadTexture(jni_bytearray *bArr);
 int isDeviceAndroidTV();
-jni_intarray *drawFont(char *str, int i, int i2, int i3);
+jni_intarray *drawFont(char *word, int size, float fontSize, int y);
 
 void createEditText(char *str);
 char *getEditText();
 
 int getCurrentLanguage();
+
+int getKeyEvent();
 
 void loadCompanionApp();
 

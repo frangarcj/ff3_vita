@@ -3,6 +3,7 @@
 #include <math.h>
 #include <psp2/appmgr.h>
 #include <psp2/apputil.h>
+#include <psp2/ctrl.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/system_param.h>
 #include <stddef.h>
@@ -306,6 +307,23 @@ jni_bytearray *getSaveFileName() {
   return result;
 }
 
+jni_bytearray *getPackFileName() {
+
+  char *buffer = "main.obb";
+  jni_bytearray *result = malloc(sizeof(jni_bytearray));
+  result->elements = malloc(strlen(buffer) + 1);
+  // Sets the value
+  strcpy((char *)result->elements, buffer);
+  result->size = strlen(buffer) + 1;
+
+  return result;
+}
+
+int isFileExist(char *str) {
+  printf("isFileExist %s \n", str);
+  return 0;
+}
+
 void createSaveFile(size_t size) {
   char *buffer = malloc(size);
   FILE *fd = fopen(SAVE_FILENAME "/save.bin", "wb");
@@ -340,6 +358,9 @@ jni_intarray *loadTexture(jni_bytearray *bArr) {
   unsigned char *temp = stbi_load_from_memory(bArr->elements, bArr->size, &x,
                                               &y, &channels_in_file, 4);
 
+  /*char tempname[100];
+  sprintf(tempname, "ux0:data/ff5/%p.png", bArr);
+  stbi_write_png(tempname,x,y,4,temp,4*x);*/
   texture->size = x * y + 2;
   texture->elements = malloc(texture->size * sizeof(int));
   texture->elements[0] = x;
@@ -412,12 +433,13 @@ static inline uint32_t utf8_decode_unsafe_4(const char *data) {
   return codepoint;
 }
 
-jni_intarray *drawFont(char *word, int size, int i2, int i3) {
+jni_intarray *drawFont(char *word, int size, float fontSize, int y2) {
   initFont();
 
+  printf("%s %s\n", __func__, word);
   jni_intarray *texture = malloc(sizeof(jni_intarray));
-  texture->size = size * size + 5;
-  texture->elements = malloc(texture->size * sizeof(int));
+  texture->size = size * size + 6;
+  texture->elements = calloc(1, texture->size * sizeof(int));
 
   int b_w = size; /* bitmap width */
   int b_h = size; /* bitmap height */
@@ -486,7 +508,7 @@ jni_intarray *drawFont(char *word, int size, int i2, int i3) {
   texture->elements[2] = 0;
 
   for (int n = 0; n < size * size; n++) {
-    texture->elements[5 + n] =
+    texture->elements[6 + n] =
         RGBA8(bitmap[n], bitmap[n], bitmap[n], bitmap[n]);
   }
 
@@ -529,6 +551,39 @@ int getCurrentLanguage() {
   default:
     return 1;
   }
+}
+
+int getKeyEvent() {
+  SceCtrlData pad;
+  sceCtrlPeekBufferPositiveExt2(0, &pad, 1);
+
+  int mask = 0;
+
+  if (pad.buttons & SCE_CTRL_TRIANGLE)
+    mask |= 0x400;
+  if (pad.buttons & SCE_CTRL_SQUARE)
+    mask |= 0x800;
+  if (pad.buttons & SCE_CTRL_L1)
+    mask |= 0x200;
+  if (pad.buttons & SCE_CTRL_R1)
+    mask |= 0x100;
+  if (pad.buttons & SCE_CTRL_CROSS)
+    mask |= 0x1;
+  if (pad.buttons & SCE_CTRL_CIRCLE)
+    mask |= 0x2;
+  if (pad.buttons & SCE_CTRL_START)
+    mask |= 0x8;
+  if (pad.buttons & SCE_CTRL_SELECT)
+    mask |= 0x4;
+  if (pad.buttons & SCE_CTRL_UP || pad.ly < 80)
+    mask |= 0x40;
+  if (pad.buttons & SCE_CTRL_DOWN || pad.ly > 170)
+    mask |= 0x80;
+  if (pad.buttons & SCE_CTRL_LEFT || pad.lx < 80)
+    mask |= 0x20;
+  if (pad.buttons & SCE_CTRL_RIGHT || pad.lx > 170)
+    mask |= 0x10;
+  return mask;
 }
 
 void loadCompanionApp() {

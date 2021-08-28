@@ -318,7 +318,9 @@ int so_resolve(so_module *mod, so_default_dynlib *default_dynlib, int size_defau
           }
 
           if (!resolved) {
-            // debugPrintf("Missing: %s\n", mod->dynstr + sym->st_name);
+            //printf("Missing: %s\n", mod->dynstr + sym->st_name);
+            //printf("{\"%s\", (uintptr_t)&%s},\n",mod->dynstr + sym->st_name, mod->dynstr + sym->st_name);
+
           }
         }
 
