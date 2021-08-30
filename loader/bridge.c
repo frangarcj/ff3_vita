@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "stb_image.h"
 #include "stb_truetype.h"
@@ -320,8 +321,10 @@ jni_bytearray *getPackFileName() {
 }
 
 int isFileExist(char *str) {
-  printf("isFileExist %s \n", str);
-  return 0;
+  struct stat buffer;
+  char temp[512];
+  sprintf(temp, "app0:/assets/%s", str);
+  return (stat(temp, &buffer) == 0);
 }
 
 void createSaveFile(size_t size) {
@@ -436,7 +439,6 @@ static inline uint32_t utf8_decode_unsafe_4(const char *data) {
 jni_intarray *drawFont(char *word, int size, float fontSize, int y2) {
   initFont();
 
-  printf("%s %s\n", __func__, word);
   jni_intarray *texture = malloc(sizeof(jni_intarray));
   texture->size = size * size + 6;
   texture->elements = calloc(1, texture->size * sizeof(int));
@@ -445,7 +447,7 @@ jni_intarray *drawFont(char *word, int size, float fontSize, int y2) {
   int b_h = size; /* bitmap height */
 
   /* calculate font scaling */
-  float scale = stbtt_ScaleForPixelHeight(info, size);
+  float scale = stbtt_ScaleForPixelHeight(info, roundf(1.5f * fontSize));
 
   int ascent, descent, lineGap;
   stbtt_GetFontVMetrics(info, &ascent, &descent, &lineGap);
@@ -504,8 +506,11 @@ jni_intarray *drawFont(char *word, int size, float fontSize, int y2) {
                             b_w, scale, scale, codepoint);
 
   texture->elements[0] = (c_x2 - c_x1 + roundf(lsb * scale));
-  texture->elements[1] = 0;
+  texture->elements[1] = ascent * scale / 3;
   texture->elements[2] = 0;
+  texture->elements[3] = 0;
+  texture->elements[4] = (size - c_y2 - c_y1) / 3;
+  texture->elements[5] = (size - c_y2 - c_y1) / 3;
 
   for (int n = 0; n < size * size; n++) {
     texture->elements[6 + n] =
@@ -584,6 +589,46 @@ int getKeyEvent() {
   if (pad.buttons & SCE_CTRL_RIGHT || pad.lx > 170)
     mask |= 0x10;
   return mask;
+}
+
+char current_file[512];
+int current_pos = 0;
+
+void openFile(char *str) {
+  sprintf(current_file, "app0:/assets/%s", str);
+  current_pos = 0;
+}
+
+int getFileSize() {
+  FILE *fp = fopen(current_file, "r");
+  fseek(fp, 0L, SEEK_END);
+  int length = ftell(fp);
+  return length;
+}
+
+void closeFile() {
+  sprintf(current_file, "");
+  current_pos = 0;
+}
+
+jni_bytearray *loadFileSize(int size) {
+  FILE *fp = fopen(current_file, "r");
+  fseek(fp, current_pos, SEEK_SET);
+
+  unsigned char *bArr2 = malloc(size);
+
+  for (int i7 = 0; i7 < size;
+       i7 += fread(&bArr2[i7], sizeof(unsigned char), size - i7, fp)) {
+  }
+
+  current_pos += size;
+  fclose(fp);
+
+  jni_bytearray *result = malloc(sizeof(jni_bytearray));
+  result->elements = bArr2;
+  result->size = size;
+
+  return result;
 }
 
 void loadCompanionApp() {

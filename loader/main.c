@@ -168,7 +168,13 @@ enum MethodIDs {
   GET_PACK_FILE_NAME,
   GET_FILE_CODE,
   IS_FILE_EXIST,
-  GET_KEY_EVENT
+  GET_KEY_EVENT,
+  ASSIGN_BACK_BUTTON,
+  IS_OK_ACHIEVEMENT,
+  OPEN_FILE,
+  GET_FILE_SIZE,
+  CLOSE_FILE,
+  LOAD_FILE_SIZE
 } MethodIDs;
 
 typedef struct {
@@ -178,6 +184,7 @@ typedef struct {
 
 static NameToMethodID name_to_method_ids[] = {
     {"getCurrentFrame", GET_CURRENT_FRAME},
+    {"loadFile(I)[B", LOAD_FILE_SIZE},
     {"loadFile", LOAD_FILE},
     {"loadRawFile", LOAD_RAW_FILE},
     {"getLanguage", GET_LANGUAGE},
@@ -194,7 +201,12 @@ static NameToMethodID name_to_method_ids[] = {
     {"getPackFileName", GET_PACK_FILE_NAME},
     {"GetFileCode", GET_FILE_CODE},
     {"isFileExist", IS_FILE_EXIST},
-    {"getKeyEvent", GET_KEY_EVENT}};
+    {"getKeyEvent", GET_KEY_EVENT},
+    {"assignBackButton", ASSIGN_BACK_BUTTON},
+    {"isOKAchievement", IS_OK_ACHIEVEMENT},
+    {"openFile", OPEN_FILE},
+    {"getFileSize", GET_FILE_SIZE},
+    {"closeFile", CLOSE_FILE}};
 
 int GetMethodID(void *env, void *class, const char *name, const char *sig) {
 
@@ -210,8 +222,18 @@ int GetMethodID(void *env, void *class, const char *name, const char *sig) {
 int GetStaticMethodID(void *env, void *class, const char *name,
                       const char *sig) {
 
+  char temp[128];
+  if (sig) {
+    sprintf(temp, "%s%s", name, sig);
+  }
+
   for (int i = 0; i < sizeof(name_to_method_ids) / sizeof(NameToMethodID);
        i++) {
+    if (sig) {
+      if (strcmp(temp, name_to_method_ids[i].name) == 0) {
+        return name_to_method_ids[i].id;
+      }
+    }
     if (strcmp(name, name_to_method_ids[i].name) == 0)
       return name_to_method_ids[i].id;
   }
@@ -244,18 +266,19 @@ void CallVoidMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
 }
 
 void *CallStaticObjectMethodV(void *env, void *obj, int methodID,
-                              uintptr_t *args) {
+                              va_list args) {
   switch (methodID) {
   case LOAD_FILE:
-    return loadFile((char *)args[0]);
+    return loadFile(va_arg(args, char *));
   case LOAD_RAW_FILE:
-    return loadRawFile((char *)args[0]);
+    return loadRawFile(va_arg(args, char *));
   case GET_SAVEFILENAME:
     return getSaveFileName();
   case LOAD_TEXTURE:
-    return loadTexture((jni_bytearray *)args[0]);
+    return loadTexture((jni_bytearray *)va_arg(args, char *));
   case DRAW_FONT:
-    return drawFont((char *)args[0], args[1], args[2], args[3]);
+    return drawFont(va_arg(args, char *), va_arg(args, int),
+                    va_arg(args, double), va_arg(args, int));
   case GET_EDIT_TEXT:
     return getEditText();
   case GET_DATAPATH_BYTES:
@@ -264,6 +287,8 @@ void *CallStaticObjectMethodV(void *env, void *obj, int methodID,
     return getSaveFileName();
   case GET_PACK_FILE_NAME:
     return getPackFileName();
+  case LOAD_FILE_SIZE:
+    return loadFileSize(va_arg(args, int));
   default:
     return NULL;
   }
@@ -281,6 +306,14 @@ void CallStaticVoidMethodV(void *env, void *obj, int methodID,
   case START_DOWNLOAD:
     loadCompanionApp();
     break;
+  case ASSIGN_BACK_BUTTON:
+    break;
+  case OPEN_FILE:
+    openFile((char *)args[0]);
+    break;
+  case CLOSE_FILE:
+    closeFile();
+    break;
   default:
     return;
   }
@@ -293,6 +326,8 @@ int CallStaticBooleanMethodV(void *env, void *obj, int methodID,
     return isDeviceAndroidTV();
   case IS_FILE_EXIST:
     return isFileExist((char *)args[0]);
+  case IS_OK_ACHIEVEMENT:
+    return 0;
   default:
     return 0;
   }
@@ -316,6 +351,8 @@ int CallStaticIntMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
     return 20;
   case GET_KEY_EVENT:
     return getKeyEvent();
+  case GET_FILE_SIZE:
+    return getFileSize();
   default:
     return 0;
   }
@@ -650,10 +687,10 @@ int main_thread(SceSize args, void *argp) {
     break;
   }
 
-  int (*ff5_render)(void *) = (void *)so_symbol(
+  int (*ff5_render)(void *, void *) = (void *)so_symbol(
       &ff5_mod,
       "Java_com_square_1enix_android_1googleplay_FFV_1GP_MainActivity_render");
-  int (*ff5_touch)(void *, int, int, float, float) =
+  int (*ff5_touch)(void *, void *, int, int, float, float) =
       (void *)so_symbol(&ff5_mod, "Java_com_square_1enix_android_1googleplay_"
                                   "FFV_1GP_MainActivity_touch");
   int (*ff5_init)(void *) = (void *)so_symbol(
@@ -662,10 +699,14 @@ int main_thread(SceSize args, void *argp) {
   int (*ff5_sizeChange)(void *, void *, int, int) =
       (void *)so_symbol(&ff5_mod, "Java_com_square_1enix_android_1googleplay_"
                                   "FFV_1GP_MainActivity_sizeChange");
+  void (*ff5_resetTouch)() =
+      (void *)so_symbol(&ff5_mod, "Java_com_square_1enix_android_1googleplay_"
+                                  "FFV_1GP_MainActivity_resetTouch");
 
   ff5_init(fake_env);
   ff5_sizeChange(NULL, NULL, has_low_res ? DEF_SCREEN_W : SCREEN_W,
                  has_low_res ? DEF_SCREEN_H : SCREEN_H);
+
   while (1) {
 
     SceTouchData touch;
@@ -676,21 +717,28 @@ int main_thread(SceSize args, void *argp) {
     int reportNum = touch.reportNum > 2 ? 2 : touch.reportNum;
 
     for (n = 0; n < reportNum; n++) {
-      ff5_touch(fake_env, n, n, (float)touch.report[n].x / 1920.0f,
-                (float)touch.report[n].y / 1088.0f);
+      ff5_touch(fake_env, NULL, 0, n,
+                (float)touch.report[n].x / 1920.0f *
+                    (has_low_res ? DEF_SCREEN_W : SCREEN_W),
+                (float)touch.report[n].y / 1088.0f *
+                    (has_low_res ? DEF_SCREEN_H : SCREEN_H));
     }
 
     // ff5_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
     //        coordinates[2], coordinates[3], mask);
 
-    ff5_render(fake_env);
+    ff5_render(fake_env, NULL);
+    ff5_resetTouch();
     vglSwapBuffers(GL_FALSE);
   }
 
   return 0;
 }
 
-void patch_game(void) {}
+void patch_game(void) {
+  hook_thumb(so_symbol(&ff5_mod, "getCheckStartUp"), (uintptr_t)&ret0);
+  hook_thumb(so_symbol(&ff5_mod, "getNetworkStatus"), (uintptr_t)&ret0);
+}
 
 extern void *_ZdaPv;
 extern void *_ZdlPv;
@@ -720,7 +768,7 @@ extern void *__cxa_guard_acquire;
 extern void *__cxa_guard_release;
 extern void *__aeabi_memset4;
 extern void *open;
-extern void *sincos;
+extern void sincos(double x, double *sin, double *cos);
 
 static int __stack_chk_guard_fake = 0x42424242;
 static FILE __sF_fake[0x100][3];
@@ -1054,7 +1102,16 @@ int file_exists(const char *path) {
   SceIoStat stat;
   return sceIoGetstat(path, &stat) >= 0;
 }
-
+int crasher(unsigned int argc, void *argv) {
+  uint32_t *nullptr = NULL;
+  for (;;) {
+    SceCtrlData pad;
+    sceCtrlPeekBufferPositive(0, &pad, 1);
+    if (pad.buttons & SCE_CTRL_SELECT)
+      *nullptr = 0;
+    sceKernelDelayThread(100);
+  }
+}
 int main(int argc, char *argv[]) {
 
   // Check if we want to start the companion app
@@ -1074,6 +1131,10 @@ int main(int argc, char *argv[]) {
   sceCtrlSetSamplingModeExt(SCE_CTRL_MODE_ANALOG_WIDE);
   sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT,
                            SCE_TOUCH_SAMPLING_STATE_START);
+
+  SceUID crasher_thread =
+      sceKernelCreateThread("crasher", crasher, 0x40, 0x1000, 0, 0, NULL);
+  sceKernelStartThread(crasher_thread, 0, NULL);
 
   scePowerSetArmClockFrequency(444);
   scePowerSetBusClockFrequency(222);

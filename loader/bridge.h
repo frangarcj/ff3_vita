@@ -34,6 +34,11 @@ int getCurrentLanguage();
 
 int getKeyEvent();
 
+void openFile(char * str);
+int getFileSize();
+void closeFile();
+jni_bytearray *loadFileSize(int size);
+
 void loadCompanionApp();
 
 #endif
