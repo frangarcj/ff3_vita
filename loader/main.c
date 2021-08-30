@@ -44,19 +44,9 @@
 #include "main.h"
 #include "so_util.h"
 
-float postfx_pos[8] = {
-  -1.0f, 1.0f,
-  -1.0f, -1.0f,
-   1.0f, 1.0f,
-   1.0f, -1.0f
-};
+float postfx_pos[8] = {-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f};
 
-float postfx_texcoord[8] = {
-  0.0f, 0.0f,
-  0.0f, 1.0f,
-  1.0f, 0.0f,
-  1.0f, 1.0f
-};
+float postfx_texcoord[8] = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
 int SCREEN_W = DEF_SCREEN_W;
 int SCREEN_H = DEF_SCREEN_H;
@@ -771,7 +761,7 @@ float *postfx_texcoords, *postfx_vertices;
 void loadShader(int is_vertex, char *file) {
   SceIoStat st;
   sceIoGetstat(file, &st);
-  char *code = (char*)malloc(st.st_size);
+  char *code = (char *)malloc(st.st_size);
 
   FILE *f = fopen(file, "rb");
   fread(code, 1, st.st_size, f);
@@ -807,6 +797,10 @@ int main_thread(SceSize args, void *argp) {
                                   SCE_GXM_MULTISAMPLE_4X);
     break;
   }
+  if (has_low_res) {
+    SCREEN_W = DEF_SCREEN_W;
+    SCREEN_H = DEF_SCREEN_H;
+  }
 
   int (*ff5_render)(void *, void *) = (void *)so_symbol(
       &ff5_mod,
@@ -827,7 +821,8 @@ int main_thread(SceSize args, void *argp) {
   if (options.postfx) {
     glGenTextures(1, &fb_tex);
     glBindTexture(GL_TEXTURE_2D, fb_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_W, SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_W, SCREEN_H, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, NULL);
     glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, fb_tex, 0);
@@ -841,7 +836,9 @@ int main_thread(SceSize args, void *argp) {
       sprintf(path, "%d_", options.postfx);
       if (strstr(d.d_name, path)) {
         sprintf(path, "app0:shaders/%s", d.d_name);
-        loadShader(strncmp(&d.d_name[strlen(d.d_name) - 5], "_f.cg", 5) == 0 ? 0 : 1, path);
+        loadShader(
+            strncmp(&d.d_name[strlen(d.d_name) - 5], "_f.cg", 5) == 0 ? 0 : 1,
+            path);
       }
     }
     sceIoDclose(fd);
@@ -853,10 +850,9 @@ int main_thread(SceSize args, void *argp) {
     glBindAttribLocation(postfx_prog, 1, "texcoord");
     glLinkProgram(postfx_prog);
   }
-  
+
   ff5_init(fake_env);
-  ff5_sizeChange(NULL, NULL, has_low_res ? DEF_SCREEN_W : SCREEN_W,
-                 has_low_res ? DEF_SCREEN_H : SCREEN_H);
+  ff5_sizeChange(NULL, NULL, SCREEN_W, SCREEN_H);
 
   memset(&old_touch, 0, sizeof(old_touch));
 
@@ -879,20 +875,16 @@ int main_thread(SceSize args, void *argp) {
         }
       }
       ff5_touch(fake_env, NULL, action, i,
-                (float)touch.report[n].x / 1920.0f *
-                    (has_low_res ? DEF_SCREEN_W : SCREEN_W),
-                (float)touch.report[n].y / 1088.0f *
-                    (has_low_res ? DEF_SCREEN_H : SCREEN_H));
+                (float)touch.report[n].x / 1920.0f * SCREEN_W),
+                (float)touch.report[n].y / 1088.0f * SCREEN_H));
       i++;
     }
 
     for (n = 0; n < old_report_num && i < 2; n++) {
       if (old_touch.report[n].id != 0) {
         ff5_touch(fake_env, NULL, 2, i,
-                  (float)old_touch.report[n].x / 1920.0f *
-                      (has_low_res ? DEF_SCREEN_W : SCREEN_W),
-                  (float)old_touch.report[n].y / 1088.0f *
-                      (has_low_res ? DEF_SCREEN_H : SCREEN_H));
+                  (float)old_touch.report[n].x / 1920.0f * SCREEN_W),
+                  (float)old_touch.report[n].y / 1088.0f * SCREEN_H));
         i++;
       }
     }
@@ -903,16 +895,16 @@ int main_thread(SceSize args, void *argp) {
 
     ff5_render(fake_env, NULL);
     if (options.postfx) {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glBindTexture(GL_TEXTURE_2D, fb_tex);
-        glUseProgram(postfx_prog);
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glUseProgram(0);
-        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindTexture(GL_TEXTURE_2D, fb_tex);
+      glUseProgram(postfx_prog);
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glUseProgram(0);
+      glBindFramebuffer(GL_FRAMEBUFFER, fb);
     }
     vglSwapBuffers(editText == -1 ? GL_FALSE : GL_TRUE);
   }
