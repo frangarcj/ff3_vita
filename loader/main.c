@@ -670,6 +670,10 @@ int main_thread(SceSize args, void *argp) {
                                   SCE_GXM_MULTISAMPLE_4X);
     break;
   }
+  if (has_low_res) {
+    SCREEN_W = DEF_SCREEN_W;
+    SCREEN_H = DEF_SCREEN_H;
+  }
 
   if (options.postfx) {
     glGenTextures(1, &fb_tex);
@@ -707,8 +711,7 @@ int main_thread(SceSize args, void *argp) {
                    unsigned int) = (void *)so_symbol(&ff3_mod, "touch");
 
   readHeader();
-  setup_viewport(has_low_res ? DEF_SCREEN_W : SCREEN_W,
-                 has_low_res ? DEF_SCREEN_H : SCREEN_H);
+  setup_viewport(SCREEN_W, SCREEN_H);
   while (1) {
 
     SceTouchData touch;
