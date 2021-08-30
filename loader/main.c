@@ -89,8 +89,6 @@ void loadOptions() {
 
 int _newlib_heap_size_user = MEMORY_NEWLIB_MB * 1024 * 1024;
 
-int _opensles_user_freq = 32000;
-
 static so_module ff5_mod;
 
 void *__wrap_memcpy(void *dest, const void *src, size_t n) {
