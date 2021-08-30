@@ -526,13 +526,15 @@ int editText = -1;
 
 void createEditText(char *str) { editText = init_ime_dialog("", str); }
 
+extern GLuint fb;
 char *getEditText() {
   char *result = NULL;
-  while (!result && editText != -1) {
+  if (!result && editText != -1) {
     result = get_ime_dialog_result();
-    vglSwapBuffers(GL_TRUE);
   }
-  editText = -1;
+  if (result) {
+    editText = -1;
+  }
   return result;
 }
 

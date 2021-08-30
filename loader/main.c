@@ -785,6 +785,7 @@ void loadShader(int is_vertex, char *file) {
   free(code);
 }
 
+extern int editText;
 int main_thread(SceSize args, void *argp) {
 
   int has_low_res;
@@ -913,7 +914,7 @@ int main_thread(SceSize args, void *argp) {
         glUseProgram(0);
         glBindFramebuffer(GL_FRAMEBUFFER, fb);
     }
-    vglSwapBuffers(GL_FALSE);
+    vglSwapBuffers(editText == -1 ? GL_FALSE : GL_TRUE);
   }
 
   return 0;
