@@ -95,6 +95,8 @@ vita_create_vpk(FF3.vpk ${VITA_TITLEID} eboot.bin
        ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/config.png sce_sys/livearea/contents/config.png
        ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
        ${CMAKE_SOURCE_DIR}/NotoSansJP-Regular.ttf NotoSansJP-Regular.ttf
+       ${CMAKE_SOURCE_DIR}/NotoSansSC-Regular.ttf NotoSansSC-Regular.ttf
+       ${CMAKE_SOURCE_DIR}/NotoSansKR-Regular.ttf NotoSansKR-Regular.ttf
        ${CMAKE_BINARY_DIR}/companion.bin companion.bin
        ${CMAKE_SOURCE_DIR}/icudt59l/cnvalias.icu icudt59l/cnvalias.icu
        ${CMAKE_SOURCE_DIR}/icudt59l/confusables.cfu icudt59l/confusables.cfu
