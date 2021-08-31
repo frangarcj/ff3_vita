@@ -26,6 +26,7 @@ In order to properly install the game, you'll have to follow these steps precise
 - Copy the `.obb` file to `ux0:data/ff3` and rename it to `main.obb`
 - Open the apk and extract `libff3.so` from the `lib/armeabi-v7a` folder to `ux0:data/ff3`.
 - Install [FF3.vpk](https://github.com/frangarcj/ff3_vita/releases/download/v1.0/FF3.vpk) on your *PS Vita*.
+- **Optional (Opening Video Playback)**: Extract from the apk, the file  `res/raw/opening.mp4` and convert it to 1280x720 (ffmpeg can be used for this task with the command `ffmpeg -i opening.mp4 -vf scale=1280x720 output.mp4`). Once converted, copy it to `ux0:data/ff3` named as `opening.mp4`.
 
 ## Build Instructions (For Developers)
 
