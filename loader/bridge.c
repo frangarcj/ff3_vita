@@ -25,7 +25,6 @@
 
 #define SAVE_FILENAME "ux0:/data/ff5"
 #define OBB_FILE SAVE_FILENAME "/main.obb"
-#define FONT_FILE "app0:/NotoSansJP-Regular.ttf"
 #define ASSETS_DIR SAVE_FILENAME "/assets"
 
 unsigned char *header = NULL;
@@ -395,7 +394,20 @@ void initFont() {
   if (info != NULL)
     return;
 
-  FILE *fontFile = fopen(FONT_FILE, "rb");
+  char font_path[256];
+  switch (getCurrentLanguage()) {
+  case 6:
+  case 7:
+    strcpy(font_path, "app0:/NotoSansSC-Regular.ttf");
+    break;
+  case 8:
+    strcpy(font_path, "app0:/NotoSansKR-Regular.ttf");
+    break;
+  default:
+    strcpy(font_path, "app0:/NotoSansJP-Regular.ttf");
+    break;
+  }
+  FILE *fontFile = fopen(font_path, "rb");
   fseek(fontFile, 0, SEEK_END);
   size = ftell(fontFile);       /* how long is the file ? */
   fseek(fontFile, 0, SEEK_SET); /* reset */
@@ -556,6 +568,12 @@ int getCurrentLanguage() {
     return 4;
   case SCE_SYSTEM_PARAM_LANG_SPANISH:
     return 5;
+  case SCE_SYSTEM_PARAM_LANG_CHINESE_S:
+    return 6;
+  case SCE_SYSTEM_PARAM_LANG_CHINESE_T:
+    return 7;
+  case SCE_SYSTEM_PARAM_LANG_KOREAN:
+    return 8;
   default:
     return 1;
   }

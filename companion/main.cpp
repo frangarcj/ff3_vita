@@ -34,7 +34,7 @@ const char *AntiAliasingName[ANTI_ALIASING_NUM] = {
   "MSAA 4x"
 };
 
-#define LANGUAGES_NUM 7
+#define LANGUAGES_NUM 10
 const char *LanguageName[LANGUAGES_NUM] = {
   "Auto",
   "Japanese",
@@ -42,7 +42,10 @@ const char *LanguageName[LANGUAGES_NUM] = {
   "French",
   "German",
   "Italian",
-  "Spanish"
+  "Spanish",
+  "Simplified Chinese",
+  "Traditional Chinese",
+  "Korean"
 };
 
 typedef struct {

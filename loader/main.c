@@ -769,7 +769,7 @@ void loadShader(int is_vertex, char *file) {
 
   GLint len = st.st_size - 1;
   GLuint shad = is_vertex ? vert : frag;
-  glShaderSource(shad, 1, &code, &len);
+  glShaderSource(shad, 1, (const char * const*)&code, &len);
   glCompileShader(shad);
 
   free(code);
@@ -875,16 +875,16 @@ int main_thread(SceSize args, void *argp) {
         }
       }
       ff5_touch(fake_env, NULL, action, i,
-                (float)touch.report[n].x / 1920.0f * SCREEN_W),
-                (float)touch.report[n].y / 1088.0f * SCREEN_H));
+                (float)touch.report[n].x / 1920.0f * SCREEN_W,
+                (float)touch.report[n].y / 1088.0f * SCREEN_H);
       i++;
     }
 
     for (n = 0; n < old_report_num && i < 2; n++) {
       if (old_touch.report[n].id != 0) {
         ff5_touch(fake_env, NULL, 2, i,
-                  (float)old_touch.report[n].x / 1920.0f * SCREEN_W),
-                  (float)old_touch.report[n].y / 1088.0f * SCREEN_H));
+                  (float)old_touch.report[n].x / 1920.0f * SCREEN_W,
+                  (float)old_touch.report[n].y / 1088.0f * SCREEN_H);
         i++;
       }
     }
