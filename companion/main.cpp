@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
     ImGui::TextColored(ImVec4(255, 255, 0, 255), "Misc");
 
     ImGui::Text("Language:"); ImGui::SameLine();
-    if (ImGui::BeginCombo("##combo2", LanguageName[options.lang])) {
+    if (ImGui::BeginCombo("##combo3", LanguageName[options.lang])) {
       for (int n = 0; n < LANGUAGES_NUM; n++) {
         bool is_selected = options.lang == n;
         if (ImGui::Selectable(LanguageName[n], is_selected))
