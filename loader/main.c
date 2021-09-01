@@ -1,4 +1,4 @@
-/* main.c -- Final Fantasy 3 .so loader
+/* main.c -- Final Fantasy V .so loader
  *
  * Copyright (C) 2021 Andy Nguyen
  * Copyright (C) 2021 Francisco José García García

@@ -2,6 +2,10 @@
     "files.associations": {
         "typeinfo": "c",
         "cmath": "c",
-        "limits.h": "c"
+        "limits.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c"
     }
 }

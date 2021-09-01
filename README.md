@@ -1,8 +1,8 @@
-# Final Fantasy 3 Vita
+# Final Fantasy V Vita
 
 <p align="center"><img src="./screenshots/game.png"></p>
 
-This is a wrapper/port of *Final Fantasy 3 Android* for the *PS Vita*.
+This is a wrapper/port of *Final Fantasy V Android* for the *PS Vita*.
 
 The port works by loading the official Android ARMv7 executable in memory, resolving its imports with native functions and patching it in order to properly run.
 
@@ -22,15 +22,16 @@ In order to properly install the game, you'll have to follow these steps precise
 
 - **Optional**: Install [PSVshell](https://github.com/Electry/PSVshell/releases) to overclock your device to 500Mhz.
 - Install `libshacccg.suprx`, if you don't have it already, by following [this guide](https://samilops2.gitbook.io/vita-troubleshooting-guide/shader-compiler/extract-libshacccg.suprx).
-- Obtain your copy of *Final Fantasy 3* legally from the Google Play store in form of an `.apk` file and one or more `.obb` files (usually located inside the `/sdcard/android/obb/com.square_enix.android_googleplay.FFIII_GP/`) folder. [You can get all the required files directly from your phone](https://stackoverflow.com/questions/11012976/how-do-i-get-the-apk-of-an-installed-app-without-root-access) or by using an apk extractor you can find in the play store. The apk can be extracted with whatever Zip extractor you prefer (eg: WinZip, WinRar, etc...) since apk is basically a zip file. You can rename `.apk` to `.zip` to open them with your default zip extractor.
+- Obtain your copy of *Final Fantasy V* legally from the Google Play store in form of an `.apk` file and one or more `.obb` files (usually located inside the `/sdcard/android/obb/com.square_enix.android_googleplay.FFV_GP/`) folder. [You can get all the required files directly from your phone](https://stackoverflow.com/questions/11012976/how-do-i-get-the-apk-of-an-installed-app-without-root-access) or by using an apk extractor you can find in the play store. The apk can be extracted with whatever Zip extractor you prefer (eg: WinZip, WinRar, etc...) since apk is basically a zip file. You can rename `.apk` to `.zip` to open them with your default zip extractor.
 - Copy the `.obb` file to `ux0:data/ff5` and rename it to `main.obb`
-- Open the apk and extract `libff5.so` from the `lib/armeabi-v7a` folder to `ux0:data/ff5`.
-- Install [FF5.vpk](https://github.com/frangarcj/ff5_vita/releases/download/v1.0/FF5.vpk) on your *PS Vita*.
+- Open the apk and extract `libff5lib.so` from the `lib/armeabi-v7a` folder to `ux0:data/ff5`.
+- Open the apk and extract the `assets` folder contents to `ux0:data/ff5/assets`.
+- Install [FF5.vpk](https://github.com/frangarcj/ff5_vita/releases/latest) on your *PS Vita*.
 
 ## Build Instructions (For Developers)
 
 In order to build the loader, you'll need a [vitasdk](https://github.com/vitasdk) build fully compiled with softfp usage.  
-You can find a precompiled version here: [Linux](https://github.com/vitasdk/buildscripts/suites/2943994805/artifacts/66184169) / [Windows](https://github.com/vitasdk/buildscripts/suites/2943994805/artifacts/66184170).  
+You can find a precompiled version [here](https://github.com/vitasdk/buildscripts/releases) with the softfp tag for each operating system.
 Additionally, you'll need these libraries to be compiled as well with `-mfloat-abi=softfp` added to their CFLAGS:
 
 - [libmathneon](https://github.com/Rinnegatamante/math-neon)

@@ -24,8 +24,9 @@
 #include "dialog.h"
 
 #define SAVE_FILENAME "ux0:/data/ff5"
-#define OBB_FILE "ux0:/data/ff5/main.obb"
+#define OBB_FILE SAVE_FILENAME "/main.obb"
 #define FONT_FILE "app0:/NotoSansJP-Regular.ttf"
+#define ASSETS_DIR SAVE_FILENAME "/assets"
 
 unsigned char *header = NULL;
 int header_length = 0;
@@ -323,7 +324,7 @@ jni_bytearray *getPackFileName() {
 int isFileExist(char *str) {
   struct stat buffer;
   char temp[512];
-  sprintf(temp, "app0:/assets/%s", str);
+  sprintf(temp, ASSETS_DIR "/%s", str);
   return (stat(temp, &buffer) == 0);
 }
 
@@ -562,7 +563,7 @@ char current_file[512];
 int current_pos = 0;
 
 void openFile(char *str) {
-  sprintf(current_file, "app0:/assets/%s", str);
+  sprintf(current_file, ASSETS_DIR "/%s", str);
   current_pos = 0;
 }
 
@@ -574,7 +575,7 @@ int getFileSize() {
 }
 
 void closeFile() {
-  sprintf(current_file, "");
+  current_file[0] = '\0';
   current_pos = 0;
 }
 

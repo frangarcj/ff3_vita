@@ -10,7 +10,7 @@ endif()
 
 project(FF5.elf C CXX)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
-set(VITA_APP_NAME "Final Fantasy 3")
+set(VITA_APP_NAME "Final Fantasy V")
 set(VITA_TITLEID  "FF5000000")
 set(VITA_VERSION  "01.00")
 set(VITA_MKSFOEX_FLAGS "-d ATTRIBUTE2=12")
@@ -90,6 +90,7 @@ vita_create_vpk(FF5.vpk ${VITA_TITLEID} eboot.bin
   NAME ${VITA_APP_NAME}
   FILE ${CMAKE_SOURCE_DIR}/sce_sys/icon0.png sce_sys/icon0.png
        ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/bg0.png sce_sys/livearea/contents/bg0.png
+       ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/config.png sce_sys/livearea/contents/config.png
        ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
        ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
        ${CMAKE_SOURCE_DIR}/NotoSansJP-Regular.ttf NotoSansJP-Regular.ttf
