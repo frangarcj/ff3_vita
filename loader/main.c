@@ -769,7 +769,7 @@ void loadShader(int is_vertex, char *file) {
 
   GLint len = st.st_size - 1;
   GLuint shad = is_vertex ? vert : frag;
-  glShaderSource(shad, 1, (const char * const*)&code, &len);
+  glShaderSource(shad, 1, (const char *const *)&code, &len);
   glCompileShader(shad);
 
   free(code);
@@ -895,6 +895,7 @@ int main_thread(SceSize args, void *argp) {
 
     ff5_render(fake_env, NULL);
     if (options.postfx) {
+      glViewport(0, 0, SCREEN_W, SCREEN_H);
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
       glBindTexture(GL_TEXTURE_2D, fb_tex);
       glUseProgram(postfx_prog);
@@ -905,6 +906,7 @@ int main_thread(SceSize args, void *argp) {
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
       glUseProgram(0);
       glBindFramebuffer(GL_FRAMEBUFFER, fb);
+      ff5_sizeChange(NULL, NULL, SCREEN_W, SCREEN_H);
     }
     vglSwapBuffers(editText == -1 ? GL_FALSE : GL_TRUE);
   }
