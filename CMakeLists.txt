@@ -10,9 +10,9 @@ endif()
 
 project(FF3.elf C CXX)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
-set(VITA_APP_NAME "Final Fantasy 3")
+set(VITA_APP_NAME "Final Fantasy III")
 set(VITA_TITLEID  "FF3000000")
-set(VITA_VERSION  "01.00")
+set(VITA_VERSION  "01.10")
 set(VITA_MKSFOEX_FLAGS "-d ATTRIBUTE2=12")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wl,-q,--wrap,memcpy,--wrap,memmove,--wrap,memset -Wall -O3 -mfloat-abi=softfp")
