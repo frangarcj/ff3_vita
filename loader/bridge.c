@@ -558,39 +558,6 @@ int getCurrentLanguage() {
   }
 }
 
-int getKeyEvent() {
-  SceCtrlData pad;
-  sceCtrlPeekBufferPositiveExt2(0, &pad, 1);
-
-  int mask = 0;
-
-  if (pad.buttons & SCE_CTRL_TRIANGLE)
-    mask |= 0x400;
-  if (pad.buttons & SCE_CTRL_SQUARE)
-    mask |= 0x800;
-  if (pad.buttons & SCE_CTRL_L1)
-    mask |= 0x200;
-  if (pad.buttons & SCE_CTRL_R1)
-    mask |= 0x100;
-  if (pad.buttons & SCE_CTRL_CROSS)
-    mask |= 0x1;
-  if (pad.buttons & SCE_CTRL_CIRCLE)
-    mask |= 0x2;
-  if (pad.buttons & SCE_CTRL_START)
-    mask |= 0x8;
-  if (pad.buttons & SCE_CTRL_SELECT)
-    mask |= 0x4;
-  if (pad.buttons & SCE_CTRL_UP || pad.ly < 80)
-    mask |= 0x40;
-  if (pad.buttons & SCE_CTRL_DOWN || pad.ly > 170)
-    mask |= 0x80;
-  if (pad.buttons & SCE_CTRL_LEFT || pad.lx < 80)
-    mask |= 0x20;
-  if (pad.buttons & SCE_CTRL_RIGHT || pad.lx > 170)
-    mask |= 0x10;
-  return mask;
-}
-
 char current_file[512];
 int current_pos = 0;
 

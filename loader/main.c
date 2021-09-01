@@ -350,7 +350,7 @@ int CallStaticIntMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
   case GET_FILE_CODE:
     return 20;
   case GET_KEY_EVENT:
-    return getKeyEvent();
+    return 0;
   case GET_FILE_SIZE:
     return getFileSize();
   default:
@@ -665,6 +665,88 @@ void setup_viewport(int width, int height) {
   glViewport(x, y, this_width, this_height);
 }
 
+uint old_buttons = 0;
+
+void (*OnPressKeyPad)(int);
+void (*OnReleaseKeyPad)(int);
+
+int processInput() {
+  SceCtrlData pad;
+  sceCtrlPeekBufferPositiveExt2(0, &pad, 1);
+
+  int mask = 0;
+
+  if (pad.buttons & SCE_CTRL_TRIANGLE) {
+    OnPressKeyPad(0x400);
+  } else if (old_buttons & SCE_CTRL_TRIANGLE) {
+    OnReleaseKeyPad(0x400);
+  }
+  if (pad.buttons & SCE_CTRL_SQUARE) {
+    OnPressKeyPad(0x800);
+  } else if (old_buttons & SCE_CTRL_SQUARE) {
+    OnReleaseKeyPad(0x800);
+  }
+  if (pad.buttons & SCE_CTRL_L1) {
+    OnPressKeyPad(0x200);
+  } else if (old_buttons & SCE_CTRL_L1) {
+    OnReleaseKeyPad(0x200);
+  }
+  if (pad.buttons & SCE_CTRL_R1) {
+    OnPressKeyPad(0x100);
+  } else if (old_buttons & SCE_CTRL_R1) {
+    OnReleaseKeyPad(0x100);
+  }
+  if (pad.buttons & SCE_CTRL_CROSS) {
+    OnPressKeyPad(0x1);
+  } else if (old_buttons & SCE_CTRL_CROSS) {
+    OnReleaseKeyPad(0x1);
+  }
+  if (pad.buttons & SCE_CTRL_CIRCLE) {
+    OnPressKeyPad(0x2);
+  } else if (old_buttons & SCE_CTRL_CIRCLE) {
+    OnReleaseKeyPad(0x2);
+  }
+  if (pad.buttons & SCE_CTRL_START) {
+    OnPressKeyPad(0x8);
+  } else if (old_buttons & SCE_CTRL_START) {
+    OnReleaseKeyPad(0x8);
+  }
+  if (pad.buttons & SCE_CTRL_SELECT) {
+    OnPressKeyPad(0x4);
+  } else if (old_buttons & SCE_CTRL_SELECT) {
+    OnReleaseKeyPad(0x4);
+  }
+  if (pad.buttons & SCE_CTRL_UP || pad.ly < 80) {
+    pad.buttons |= SCE_CTRL_UP;
+    OnPressKeyPad(0x40);
+  } else if (old_buttons & SCE_CTRL_UP) {
+    OnReleaseKeyPad(0x40);
+  }
+  if (pad.buttons & SCE_CTRL_DOWN || pad.ly > 170) {
+    pad.buttons |= SCE_CTRL_DOWN;
+    OnPressKeyPad(0x80);
+  } else if (old_buttons & SCE_CTRL_DOWN) {
+    OnReleaseKeyPad(0x80);
+  }
+  if (pad.buttons & SCE_CTRL_LEFT || pad.lx < 80) {
+    pad.buttons |= SCE_CTRL_LEFT;
+    OnPressKeyPad(0x20);
+  } else if (old_buttons & SCE_CTRL_LEFT) {
+    OnReleaseKeyPad(0x20);
+  }
+  if (pad.buttons & SCE_CTRL_RIGHT || pad.lx > 170) {
+    pad.buttons |= SCE_CTRL_RIGHT;
+    OnPressKeyPad(0x10);
+  } else if (old_buttons & SCE_CTRL_RIGHT) {
+    OnReleaseKeyPad(0x10);
+  }
+
+  old_buttons = pad.buttons;
+  return mask;
+}
+
+SceTouchData old_touch;
+
 int main_thread(SceSize args, void *argp) {
 
   int has_low_res;
@@ -699,36 +781,58 @@ int main_thread(SceSize args, void *argp) {
   int (*ff5_sizeChange)(void *, void *, int, int) =
       (void *)so_symbol(&ff5_mod, "Java_com_square_1enix_android_1googleplay_"
                                   "FFV_1GP_MainActivity_sizeChange");
-  void (*ff5_resetTouch)() =
-      (void *)so_symbol(&ff5_mod, "Java_com_square_1enix_android_1googleplay_"
-                                  "FFV_1GP_MainActivity_resetTouch");
+
+  OnPressKeyPad = (void *)so_symbol(&ff5_mod, "_Z13OnPressKeyPadi");
+  OnReleaseKeyPad = (void *)so_symbol(&ff5_mod, "_Z15OnReleaseKeyPadi");
 
   ff5_init(fake_env);
   ff5_sizeChange(NULL, NULL, has_low_res ? DEF_SCREEN_W : SCREEN_W,
                  has_low_res ? DEF_SCREEN_H : SCREEN_H);
 
+  memset(&old_touch, 0, sizeof(old_touch));
+
   while (1) {
 
     SceTouchData touch;
-    int n;
+    int n, m, action = 0, i = 0;
 
     sceTouchPeek(0, &touch, 1);
+    int report_num = touch.reportNum > 2 ? 2 : touch.reportNum;
+    int old_report_num = old_touch.reportNum > 2 ? 2 : old_touch.reportNum;
+    for (n = 0; n < report_num; n++) {
 
-    int reportNum = touch.reportNum > 2 ? 2 : touch.reportNum;
-
-    for (n = 0; n < reportNum; n++) {
-      ff5_touch(fake_env, NULL, 0, n,
+      action = 0;
+      for (m = 0; m < old_report_num; m++) {
+        if (touch.report[n].id == old_touch.report[m].id) {
+          action = 1;
+          old_touch.report[m].id = 0;
+          break;
+        }
+      }
+      ff5_touch(fake_env, NULL, action, i,
                 (float)touch.report[n].x / 1920.0f *
                     (has_low_res ? DEF_SCREEN_W : SCREEN_W),
                 (float)touch.report[n].y / 1088.0f *
                     (has_low_res ? DEF_SCREEN_H : SCREEN_H));
+      i++;
     }
 
-    // ff5_touch(0, 0, reportNum, reportNum, coordinates[0], coordinates[1],
-    //        coordinates[2], coordinates[3], mask);
+    for (n = 0; n < old_report_num && i < 2; n++) {
+      if (old_touch.report[n].id != 0) {
+        ff5_touch(fake_env, NULL, 2, i,
+                  (float)old_touch.report[n].x / 1920.0f *
+                      (has_low_res ? DEF_SCREEN_W : SCREEN_W),
+                  (float)old_touch.report[n].y / 1088.0f *
+                      (has_low_res ? DEF_SCREEN_H : SCREEN_H));
+        i++;
+      }
+    }
+
+    memcpy(&old_touch, &touch, sizeof(old_touch));
+
+    processInput();
 
     ff5_render(fake_env, NULL);
-    ff5_resetTouch();
     vglSwapBuffers(GL_FALSE);
   }
 
@@ -738,6 +842,7 @@ int main_thread(SceSize args, void *argp) {
 void patch_game(void) {
   hook_thumb(so_symbol(&ff5_mod, "getCheckStartUp"), (uintptr_t)&ret0);
   hook_thumb(so_symbol(&ff5_mod, "getNetworkStatus"), (uintptr_t)&ret0);
+  hook_thumb(so_symbol(&ff5_mod, "isNewsDialogActive"), (uintptr_t)&ret0);
 }
 
 extern void *_ZdaPv;
@@ -1102,16 +1207,6 @@ int file_exists(const char *path) {
   SceIoStat stat;
   return sceIoGetstat(path, &stat) >= 0;
 }
-int crasher(unsigned int argc, void *argv) {
-  uint32_t *nullptr = NULL;
-  for (;;) {
-    SceCtrlData pad;
-    sceCtrlPeekBufferPositive(0, &pad, 1);
-    if (pad.buttons & SCE_CTRL_SELECT)
-      *nullptr = 0;
-    sceKernelDelayThread(100);
-  }
-}
 int main(int argc, char *argv[]) {
 
   // Check if we want to start the companion app
@@ -1131,10 +1226,6 @@ int main(int argc, char *argv[]) {
   sceCtrlSetSamplingModeExt(SCE_CTRL_MODE_ANALOG_WIDE);
   sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT,
                            SCE_TOUCH_SAMPLING_STATE_START);
-
-  SceUID crasher_thread =
-      sceKernelCreateThread("crasher", crasher, 0x40, 0x1000, 0, 0, NULL);
-  sceKernelStartThread(crasher_thread, 0, NULL);
 
   scePowerSetArmClockFrequency(444);
   scePowerSetBusClockFrequency(222);
