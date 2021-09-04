@@ -535,19 +535,23 @@ jni_intarray *drawFont(char *word, int size, float fontSize, int y2) {
 }
 
 int editText = -1;
+char *editTextResult = NULL;
 
-void createEditText(char *str) { editText = init_ime_dialog("", str); }
+void createEditText(char *str) {
+  editTextResult = NULL;
+  editText = init_ime_dialog("", str);
+}
 
-extern GLuint fb;
-char *getEditText() {
-  char *result = NULL;
-  if (!result && editText != -1) {
-    result = get_ime_dialog_result();
+char *getEditText() { return editTextResult; }
+
+int isEditTextExec() {
+  if (!editTextResult && editText != -1) {
+    editTextResult = get_ime_dialog_result();
   }
-  if (result) {
+  if (editTextResult) {
     editText = -1;
   }
-  return result;
+  return editText != -1;
 }
 
 int getCurrentLanguage() {

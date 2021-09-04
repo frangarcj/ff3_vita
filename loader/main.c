@@ -169,6 +169,7 @@ enum MethodIDs {
   DRAW_FONT,
   CREATE_EDIT_TEXT,
   GET_EDIT_TEXT,
+  IS_EDIT_TEXT_EXEC,
   START_DOWNLOAD,
   GET_DATAPATH_BYTES,
   GET_STORAGEPATH_BYTES,
@@ -202,6 +203,7 @@ static NameToMethodID name_to_method_ids[] = {
     {"drawFont", DRAW_FONT},
     {"createEditText", CREATE_EDIT_TEXT},
     {"getEditText", GET_EDIT_TEXT},
+    {"isEditTextExec", IS_EDIT_TEXT_EXEC},
     {"startDownload", START_DOWNLOAD},
     {"getDataPathBytes", GET_DATAPATH_BYTES},
     {"getStoragePathBytes", GET_STORAGEPATH_BYTES},
@@ -335,6 +337,8 @@ int CallStaticBooleanMethodV(void *env, void *obj, int methodID,
     return isFileExist((char *)args[0]);
   case IS_OK_ACHIEVEMENT:
     return 0;
+  case IS_EDIT_TEXT_EXEC:
+    return isEditTextExec();
   default:
     return 0;
   }
@@ -775,7 +779,6 @@ void loadShader(int is_vertex, char *file) {
   free(code);
 }
 
-extern int editText;
 int main_thread(SceSize args, void *argp) {
 
   int has_low_res;
@@ -908,7 +911,7 @@ int main_thread(SceSize args, void *argp) {
       glBindFramebuffer(GL_FRAMEBUFFER, fb);
       ff5_sizeChange(NULL, NULL, SCREEN_W, SCREEN_H);
     }
-    vglSwapBuffers(editText == -1 ? GL_FALSE : GL_TRUE);
+    vglSwapBuffers(isEditTextExec());
   }
 
   return 0;

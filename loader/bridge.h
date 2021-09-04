@@ -29,10 +29,11 @@ jni_intarray *drawFont(char *word, int size, float fontSize, int y);
 
 void createEditText(char *str);
 char *getEditText();
+int isEditTextExec();
 
 int getCurrentLanguage();
 
-void openFile(char * str);
+void openFile(char *str);
 int getFileSize();
 void closeFile();
 jni_bytearray *loadFileSize(int size);
