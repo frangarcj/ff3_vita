@@ -49,7 +49,6 @@ target_link_libraries(FF5.elf
   SceVshBridge_stub
   OpenSLES
   sndfile
-  SDL
   SceHid_stub
   icudata
   icuuc
