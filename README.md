@@ -56,7 +56,7 @@ Additionally, you'll need these libraries to be compiled as well with `-mfloat-a
 - [vitaGL](https://github.com/Rinnegatamante/vitaGL)
 
   - ````bash
-    make SOFTFP_ABI=1 NO_DEBUG=1 NO_TEX_COMBINER=1 MATH_SPEEDHACK=1 PHYCONT_ON_DEMAND=1 install
+    make NO_DEBUG=1 install
     ````
 
 - [opensles](https://github.com/frangarcj/opensles)
@@ -65,10 +65,7 @@ Additionally, you'll need these libraries to be compiled as well with `-mfloat-a
     cd libopensles
     make install
     ````
-Finally, you'll need these libraries recompiled with `-mfloat-abi=softfp` from [vitasdk/packages](https://github.com/vitasdk/packages):
-- sndfile
-- SDL
-- icu4c
+The current build expects the standard hardfp VitaSDK toolchain and packages from [vitasdk/packages](https://github.com/vitasdk/packages).
 
 After all these requirements are met, you can compile the loader with the following commands:
 
@@ -77,7 +74,7 @@ mkdir build && cd build
 cmake .. && make
 ```
 
-You can also use [vitasdk/vitasdk-softfp](https://hub.docker.com/r/vitasdk/vitasdk-softfp) with Docker. See [compilation.yml](https://github.com/frangarcj/ff3_vita/blob/master/.github/workflows/compilation.yml).
+You can also use [vitasdk/vitasdk](https://hub.docker.com/r/vitasdk/vitasdk) with Docker. See [compilation.yml](https://github.com/frangarcj/ff3_vita/blob/master/.github/workflows/compilation.yml).
 
 ## Credits
 
