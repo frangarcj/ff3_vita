@@ -11,6 +11,10 @@
 #include <psp2/kernel/sysmem.h>
 #include <kubridge.h>
 
+#ifndef SCE_KERNEL_MEMBLOCK_TYPE_USER_RX
+#define SCE_KERNEL_MEMBLOCK_TYPE_USER_RX 0x0C20D050
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -75,12 +79,18 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr) {
   sceIoLseek(fd, 0, SCE_SEEK_SET);
 
   so_blockid = sceKernelAllocMemBlock("file", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, (so_size + 0xfff) & ~0xfff, NULL);
-  if (so_blockid < 0)
+  if (so_blockid < 0) {
+    sceIoClose(fd);
     return so_blockid;
+  }
 
   sceKernelGetMemBlockBase(so_blockid, &so_data);
 
-  sceIoRead(fd, so_data, so_size);
+  if (sceIoRead(fd, so_data, so_size) != (SceSSize)so_size) {
+    sceIoClose(fd);
+    res = -1;
+    goto err_free_so;
+  }
   sceIoClose(fd);
 
   if (memcmp(so_data, ELFMAG, SELFMAG) != 0) {
@@ -143,6 +153,10 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr) {
       }
 
       char *zero = malloc(prog_size);
+      if (!zero) {
+        res = -1;
+        goto err_free_data;
+      }
       memset(zero, 0, prog_size);
       kuKernelCpuUnrestrictedMemcpy(prog_data, zero, prog_size);
       free(zero);
@@ -209,11 +223,14 @@ int so_load(so_module *mod, const char *filename, uintptr_t load_addr) {
   return 0;
 
 err_free_data:
-  sceKernelFreeMemBlock(mod->data_blockid);
+  if (mod->data_blockid > 0)
+    sceKernelFreeMemBlock(mod->data_blockid);
 err_free_text:
-  sceKernelFreeMemBlock(mod->text_blockid);
+  if (mod->text_blockid > 0)
+    sceKernelFreeMemBlock(mod->text_blockid);
 err_free_so:
-  sceKernelFreeMemBlock(so_blockid);
+  if (so_blockid > 0)
+    sceKernelFreeMemBlock(so_blockid);
 
   return res;
 }
@@ -281,7 +298,7 @@ uintptr_t so_resolve_link(so_module *mod, const char *symbol) {
   return 0;
 }
 
-int so_resolve(so_module *mod, so_default_dynlib *default_dynlib, int size_default_dynlib, int default_dynlib_only) {
+int so_resolve(so_module *mod, const so_default_dynlib *default_dynlib, int size_default_dynlib, int default_dynlib_only) {
   for (int i = 0; i < mod->num_reldyn + mod->num_relplt; i++) {
     Elf32_Rel *rel = i < mod->num_reldyn ? &mod->reldyn[i] : &mod->relplt[i - mod->num_reldyn];
     Elf32_Sym *sym = &mod->dynsym[ELF32_R_SYM(rel->r_info)];
@@ -304,7 +321,7 @@ int so_resolve(so_module *mod, so_default_dynlib *default_dynlib, int size_defau
             }
           }
 
-          for (int j = 0; j < size_default_dynlib / sizeof(so_default_dynlib); j++) {
+          for (size_t j = 0; j < (size_t)size_default_dynlib / sizeof(so_default_dynlib); j++) {
             if (strcmp(mod->dynstr + sym->st_name, default_dynlib[j].symbol) == 0) {
               if (resolved) {
                 // debugPrintf("Overriden: %s\n", mod->dynstr + sym->st_name);

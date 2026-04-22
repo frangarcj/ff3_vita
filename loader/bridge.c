@@ -3,9 +3,11 @@
 #include <math.h>
 #include <vitasdk.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 
 #include "stb_image.h"
 #include "stb_truetype.h"
@@ -40,9 +42,9 @@ GLuint movie_fs;
 GLuint movie_vs;
 GLuint movie_prog;
 
-SceUID audio_thid;
+SceUID audio_thid = -1;
 int audio_new;
-int audio_port;
+int audio_port = -1;
 int audio_len;
 int audio_freq;
 int audio_mode;
@@ -77,30 +79,14 @@ void gpu_free(void *p, void *ptr) {
 }
 
 void movie_player_audio_init(void) {
-  audio_port = -1;
-  for (int i = 0; i < 8; i++) {
-    if (sceAudioOutGetConfig(i, SCE_AUDIO_OUT_CONFIG_TYPE_LEN) >= 0) {
-      audio_port = i;
-      break;
-    }
-  }
-
-  if (audio_port == -1) {
-    audio_port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, 48000, SCE_AUDIO_OUT_MODE_STEREO);
-    audio_new = 1;
-  } else {
-    audio_len = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_LEN);
-    audio_freq = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_FREQ);
-    audio_mode = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_MODE);
-    audio_new = 0;
-  }
+  audio_port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, 48000, SCE_AUDIO_OUT_MODE_STEREO);
+  audio_new = 1;
 }
 
 void movie_player_audio_shutdown(void) {
-  if (audio_new) {
+  if (audio_port >= 0) {
     sceAudioOutReleasePort(audio_port);
-  } else {
-    sceAudioOutSetConfig(audio_port, audio_len, audio_freq, (SceAudioOutMode)audio_mode);
+    audio_port = -1;
   }
 }
 
@@ -125,6 +111,7 @@ void movie_player_draw(void) {
   if (player_state == PLAYER_ACTIVE) {
     if (sceAvPlayerIsActive(movie_player)) {
       SceAvPlayerFrameInfo frame;
+
       if (sceAvPlayerGetVideoData(movie_player, &frame)) {
         movie_first_frame_drawn = 1;
         movie_frame_idx = (movie_frame_idx + 1) % 2;
@@ -155,9 +142,16 @@ void movie_player_draw(void) {
   }
 
   if (player_state == PLAYER_STOP) {
-    sceAvPlayerStop(movie_player);
-    sceKernelWaitThreadEnd(audio_thid, NULL, NULL);
-    sceAvPlayerClose(movie_player);
+    if (movie_player >= 0)
+      sceAvPlayerStop(movie_player);
+    if (audio_thid >= 0) {
+      sceKernelWaitThreadEnd(audio_thid, NULL, NULL);
+      audio_thid = -1;
+    }
+    if (movie_player >= 0) {
+      sceAvPlayerClose(movie_player);
+      movie_player = -1;
+    }
     movie_player_audio_shutdown();
     player_state = PLAYER_INACTIVE;
     glClear(GL_COLOR_BUFFER_BIT);
@@ -198,11 +192,15 @@ void movie_player_init() {
 
 void playMovie() {
   SceIoStat st;
-  if (sceIoGetstat("ux0:data/ff3/opening.mp4", &st) < 0)
+  if (sceIoGetstat("ux0:data/ff3/opening.mp4", &st) < 0) {
     return;
+  }
 
   movie_player_init();
   movie_player_audio_init();
+  if (audio_port < 0) {
+    return;
+  }
 
   SceAvPlayerInitData playerInit;
   sceClibMemset(&playerInit, 0, sizeof(SceAvPlayerInitData));
@@ -217,11 +215,30 @@ void playMovie() {
   playerInit.autoStart = GL_TRUE;
 
   movie_player = sceAvPlayerInit(&playerInit);
+  if (movie_player < 0) {
+    movie_player_audio_shutdown();
+    return;
+  }
 
-  sceAvPlayerAddSource(movie_player, "ux0:data/ff3/opening.mp4");
+  if (sceAvPlayerAddSource(movie_player, "ux0:data/ff3/opening.mp4") < 0) {
+    sceAvPlayerClose(movie_player);
+    movie_player = -1;
+    movie_player_audio_shutdown();
+    return;
+  }
 
   audio_thid = sceKernelCreateThread("movie_audio_thread", movie_player_audio_thread, 0x10000100 - 10, 0x4000, 0, 0, NULL);
-  sceKernelStartThread(audio_thid, 0, NULL);
+  if (audio_thid < 0 || sceKernelStartThread(audio_thid, 0, NULL) < 0) {
+    if (audio_thid >= 0) {
+      sceKernelDeleteThread(audio_thid);
+      audio_thid = -1;
+    }
+    sceAvPlayerStop(movie_player);
+    sceAvPlayerClose(movie_player);
+    movie_player = -1;
+    movie_player_audio_shutdown();
+    return;
+  }
 
   player_state = PLAYER_ACTIVE;
   movie_first_frame_drawn = 0;
@@ -233,8 +250,9 @@ void stopMovie() {
 
 uint8_t getMovieState() {
   movie_player_draw();
-  if (!(player_state == PLAYER_ACTIVE && sceAvPlayerIsActive(movie_player)))
+  if (!(player_state == PLAYER_ACTIVE && sceAvPlayerIsActive(movie_player))) {
     return 0;
+  }
   return 1;
 }
 
@@ -252,32 +270,68 @@ static int getInt(unsigned char *bArr, int i) {
   return *(unsigned int *)(&bArr[i]);
 }
 
+static int read_exact(FILE *fp, void *buffer, size_t size) {
+  uint8_t *dst = (uint8_t *)buffer;
+  size_t total = 0;
+
+  while (total < size) {
+    size_t read_size = fread(dst + total, 1, size - total, fp);
+    if (read_size == 0) {
+      return 0;
+    }
+    total += read_size;
+  }
+
+  return 1;
+}
+
 unsigned char *gzipRead(unsigned char *bArr, int *bArr_length) {
+  if (!bArr || !bArr_length || *bArr_length <= 4) {
+    return NULL;
+  }
+
   unsigned int readInt = __builtin_bswap32(getInt(bArr, 0));
+  if (readInt == 0 || readInt > 64 * 1024 * 1024) {
+    return NULL;
+  }
+
   unsigned char *bArr2 = calloc(readInt, sizeof(unsigned char));
+  if (!bArr2) {
+    return NULL;
+  }
+
   unsigned char *bArr3 = &bArr[4];
 
   z_stream infstream;
-  infstream.zalloc = Z_NULL;
-  infstream.zfree = Z_NULL;
-  infstream.opaque = Z_NULL;
-  // setup "b" as the input and "c" as the compressed output
+  memset(&infstream, 0, sizeof(infstream));
   infstream.avail_in = *bArr_length - 4; // size of input
   infstream.next_in = bArr3;             // input char array
   infstream.avail_out = readInt;         // size of output
   infstream.next_out = bArr2;            // output char array
 
-  // the actual DE-compression work.
-  inflateInit2(&infstream, MAX_WBITS | 16);
-  inflate(&infstream, Z_FULL_FLUSH);
-  inflateEnd(&infstream);
+  if (inflateInit2(&infstream, MAX_WBITS | 16) != Z_OK) {
+    free(bArr2);
+    return NULL;
+  }
 
-  *bArr_length = readInt;
+  int ret = inflate(&infstream, Z_FINISH);
+  inflateEnd(&infstream);
+  if (ret != Z_STREAM_END) {
+    free(bArr2);
+    return NULL;
+  }
+
+  *bArr_length = (int)infstream.total_out;
   return bArr2;
 }
 
 unsigned char *m476a(char *str, int *file_length) {
+  if (!str || !file_length || !header) {
+    return NULL;
+  }
+
   int i;
+  size_t str_length = strlen(str);
 
   unsigned char *bArr = header;
   if (bArr != NULL) {
@@ -288,12 +342,15 @@ unsigned char *m476a(char *str, int *file_length) {
       int i3 = (i2 + a) / 2;
       int i4 = i3 * 12;
       int a2 = getInt(header, i4 + 4);
+      if (a2 < 0 || a2 + (int)str_length >= header_length) {
+        return NULL;
+      }
       int i5 = 0;
-      for (int i6 = 0; i6 < strlen(str) && i5 == 0; i6++) {
+      for (size_t i6 = 0; i6 < str_length && i5 == 0; i6++) {
         i5 = (header[a2 + i6] & 0xFF) - (str[i6] & 0xFF);
       }
       if (i5 == 0) {
-        i5 = header[a2 + strlen(str)] & 0xFF;
+        i5 = header[a2 + str_length] & 0xFF;
       }
       if (i5 == 0) {
         i = i4 + 8;
@@ -313,15 +370,29 @@ unsigned char *m476a(char *str, int *file_length) {
   }
 
   const char *a = OBB_FILE;
-  FILE *fp = fopen(a, "r");
+  FILE *fp = fopen(a, "rb");
+  if (!fp) {
+    return NULL;
+  }
+
   int a3 = getInt(header, i + 0);
-  fseek(fp, a3, SEEK_SET);
-
   *file_length = getInt(header, i + 4);
-  unsigned char *bArr2 = malloc(*file_length);
+  if (a3 < 0 || *file_length <= 0) {
+    fclose(fp);
+    return NULL;
+  }
 
-  for (int i7 = 0; i7 < *file_length;
-       i7 += fread(&bArr2[i7], sizeof(unsigned char), *file_length - i7, fp)) {
+  fseek(fp, a3, SEEK_SET);
+  unsigned char *bArr2 = malloc(*file_length);
+  if (!bArr2) {
+    fclose(fp);
+    return NULL;
+  }
+
+  if (!read_exact(fp, bArr2, *file_length)) {
+    fclose(fp);
+    free(bArr2);
+    return NULL;
   }
 
   fclose(fp);
@@ -332,39 +403,66 @@ unsigned char *m476a(char *str, int *file_length) {
 
   free(bArr2);
 
+  if (!a4) {
+    return NULL;
+  }
+
   return a4;
 }
 
 int readHeader() {
   const char *a = OBB_FILE;
-  FILE *fp = fopen(a, "r");
+  FILE *fp = fopen(a, "rb");
+  if (!fp) {
+    return 0;
+  }
+
   fseek(fp, 0L, SEEK_END);
   int length = ftell(fp);
+  if (length < 16) {
+    fclose(fp);
+    return 0;
+  }
   fseek(fp, 0L, SEEK_SET);
 
   unsigned char bArr[16];
 
-  for (int i = 0; i < 16;
-       i += fread(&bArr[i], sizeof(unsigned char), 16 - i, fp)) {
+  if (!read_exact(fp, bArr, sizeof(bArr))) {
+    fclose(fp);
+    return 0;
   }
 
   decodeArray(bArr, 16, 84861466u);
 
   if (getInt(bArr, 0) != 826495553) {
     printf("initFileTable: Header Error\n");
+    fclose(fp);
     return 0;
   } else if (length != getInt(bArr, 4)) {
     printf("initFileTable: Size Error\n");
+    fclose(fp);
     return 0;
   } else {
     unsigned int a2 = getInt(bArr, 8);
     header_length = getInt(bArr, 12);
+    if (a2 < 16 || header_length <= 0 || (int)a2 + header_length > length) {
+      fclose(fp);
+      return 0;
+    }
+
     header = malloc(header_length);
+    if (!header) {
+      fclose(fp);
+      return 0;
+    }
 
     fseek(fp, (long)(a2 - 16), SEEK_CUR);
 
-    for (int i = 0; i < header_length;
-         i += fread(&header[i], sizeof(unsigned char), header_length - i, fp)) {
+    if (!read_exact(fp, header, header_length)) {
+      free(header);
+      header = NULL;
+      fclose(fp);
+      return 0;
     }
 
     decodeArray(header, header_length, a2 + 84861466u);
@@ -372,6 +470,11 @@ int readHeader() {
     unsigned char *header2 = gzipRead(header, &header_length);
 
     free(header);
+    if (!header2) {
+      header = NULL;
+      fclose(fp);
+      return 0;
+    }
 
     header = header2;
 
@@ -382,26 +485,64 @@ int readHeader() {
 
 void toUtf8(const char *src, size_t length, char *dst, const char *src_encoding,
             size_t *dst_length_p) {
+  if (!src || !dst || !src_encoding || !dst_length_p) {
+    return;
+  }
 
   UErrorCode status = U_ZERO_ERROR;
-  UConverter *conv;
+  UConverter *conv = NULL;
   int32_t len;
+  int32_t temp_capacity = (int32_t)(length + 1);
 
-  uint16_t *temp = malloc(length * 3);
+  UChar *temp = (UChar *)malloc(sizeof(UChar) * temp_capacity);
+  if (!temp) {
+    *dst_length_p = 0;
+    dst[0] = '\0';
+    return;
+  }
+
   u_setDataDirectory("app0:/");
   conv = ucnv_open(src_encoding, &status);
+  if (U_FAILURE(status) || !conv) {
+    free(temp);
+    *dst_length_p = 0;
+    dst[0] = '\0';
+    return;
+  }
 
-  len = ucnv_toUChars(conv, temp, length * 3, src, length, &status);
+  len = ucnv_toUChars(conv, temp, temp_capacity, src, (int32_t)length, &status);
   ucnv_close(conv);
+  if (U_FAILURE(status)) {
+    free(temp);
+    *dst_length_p = 0;
+    dst[0] = '\0';
+    return;
+  }
 
+  status = U_ZERO_ERROR;
   conv = ucnv_open("utf-8", &status);
-  *dst_length_p = ucnv_fromUChars(conv, dst, length * 3, temp, len, &status);
+  if (U_FAILURE(status) || !conv) {
+    free(temp);
+    *dst_length_p = 0;
+    dst[0] = '\0';
+    return;
+  }
+
+  *dst_length_p = ucnv_fromUChars(conv, dst, (int32_t)(length * 3), temp, len,
+                                  &status);
   ucnv_close(conv);
+  if (U_FAILURE(status)) {
+    *dst_length_p = 0;
+    dst[0] = '\0';
+  }
 
   free(temp);
 }
 
 unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
+  if (!bArr || !bArr_length || *bArr_length < 16) {
+    return bArr;
+  }
 
   int lang = getCurrentLanguage();
   if (lang >= 6) {
@@ -409,9 +550,16 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
   }
 
   unsigned char *utf8_strings = malloc(*bArr_length * 3);
+  if (!utf8_strings) {
+    return bArr;
+  }
 
   int entry_number = *(int *)&bArr[8];
   int header_length = (entry_number * 12) + 16;
+  if (entry_number < 0 || header_length < 16 || header_length > *bArr_length) {
+    free(utf8_strings);
+    return bArr;
+  }
 
   memcpy(utf8_strings, bArr, header_length);
 
@@ -420,14 +568,28 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
   int entry_offset = 16;
 
   while (entry_index < entry_number) {
+    if (entry_offset + 12 > header_length) {
+      free(utf8_strings);
+      return bArr;
+    }
+
     *(int *)&utf8_strings[entry_offset + 8] = utf8_offset;
 
     unsigned char string_number = bArr[entry_offset + 4];
     int string_offset = *(int *)&bArr[entry_offset + 8];
+    if (string_offset < header_length || string_offset >= *bArr_length) {
+      free(utf8_strings);
+      return bArr;
+    }
+
     for (int string_index = 0; string_index < string_number; string_index++) {
       int string_length = 0;
-      while (bArr[string_offset + string_length] != 0) {
+      while ((string_offset + string_length) < *bArr_length && bArr[string_offset + string_length] != 0) {
         string_length++;
+      }
+      if ((string_offset + string_length) >= *bArr_length) {
+        free(utf8_strings);
+        return bArr;
       }
       unsigned int utf8_length = 0;
       toUtf8((const char *)&bArr[string_offset], string_length,
@@ -520,10 +682,15 @@ jni_bytearray *getSaveFileName() {
 }
 
 void createSaveFile(size_t size) {
-  char *buffer = malloc(size);
+  char *buffer = (char *)calloc(size, 1);
+  if (!buffer)
+    return;
+
   FILE *fd = fopen(SAVE_FILENAME "/save.bin", "wb");
-  fwrite(buffer, sizeof(char), size, fd);
-  fclose(fd);
+  if (fd) {
+    fwrite(buffer, sizeof(char), size, fd);
+    fclose(fd);
+  }
   free(buffer);
 }
 
@@ -546,15 +713,32 @@ uint64_t getCurrentFrame(uint64_t j) {
    (((r)&0xFF) << 0))
 
 jni_intarray *loadTexture(jni_bytearray *bArr) {
-
-  jni_intarray *texture = malloc(sizeof(jni_intarray));
+  if (!bArr || !bArr->elements || bArr->size <= 0) {
+    return NULL;
+  }
 
   int x, y, channels_in_file;
   unsigned char *temp = stbi_load_from_memory(bArr->elements, bArr->size, &x,
                                               &y, &channels_in_file, 4);
+  if (!temp || x <= 0 || y <= 0) {
+    if (temp)
+      free(temp);
+    return NULL;
+  }
+
+  jni_intarray *texture = malloc(sizeof(jni_intarray));
+  if (!texture) {
+    free(temp);
+    return NULL;
+  }
 
   texture->size = x * y + 2;
   texture->elements = malloc(texture->size * sizeof(int));
+  if (!texture->elements) {
+    free(temp);
+    free(texture);
+    return NULL;
+  }
   texture->elements[0] = x;
   texture->elements[1] = y;
 
@@ -597,16 +781,37 @@ void initFont() {
     break;
   }
   FILE *fontFile = fopen(font_path, "rb");
+  if (!fontFile)
+    return;
+
   fseek(fontFile, 0, SEEK_END);
   size = ftell(fontFile);       /* how long is the file ? */
   fseek(fontFile, 0, SEEK_SET); /* reset */
+  if (size <= 0) {
+    fclose(fontFile);
+    return;
+  }
 
   fontBuffer = malloc(size);
+  if (!fontBuffer) {
+    fclose(fontFile);
+    return;
+  }
 
-  fread(fontBuffer, size, 1, fontFile);
+  if (fread(fontBuffer, size, 1, fontFile) != 1) {
+    free(fontBuffer);
+    fontBuffer = NULL;
+    fclose(fontFile);
+    return;
+  }
   fclose(fontFile);
 
   info = malloc(sizeof(stbtt_fontinfo));
+  if (!info) {
+    free(fontBuffer);
+    fontBuffer = NULL;
+    return;
+  }
 
   /* prepare font */
   if (!stbtt_InitFont(info, fontBuffer, 0)) {
