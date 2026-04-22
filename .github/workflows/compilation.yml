@@ -13,6 +13,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install ICU package
+      run: vdpm -f icu4c
+
     - name: Install dependencies
       run: |
         git clone https://github.com/frangarcj/opensles

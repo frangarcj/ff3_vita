@@ -114,13 +114,19 @@ target_link_libraries(FF3.elf
   SceKernelDmacMgr_stub
   SceGxm_stub
   SceShaccCg_stub
+  SceShaccCgExt
   SceSysmodule_stub
   ScePower_stub
   SceTouch_stub
   SceVshBridge_stub
   SceAvPlayer_stub
+  taihen_stub
   OpenSLES
   sndfile
+  mpg123
+  mp3lame
+  opus
+  opusfile
   FLAC
   vorbisenc
   vorbisfile
@@ -158,9 +164,11 @@ target_link_libraries(companion
   SceKernelDmacMgr_stub
   SceGxm_stub
   SceShaccCg_stub
+  SceShaccCgExt
   SceSysmodule_stub
   SceTouch_stub
   SceVshBridge_stub
+  taihen_stub
 )
 
 vita_create_self(companion.bin companion UNSAFE)
