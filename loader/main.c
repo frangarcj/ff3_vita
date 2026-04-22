@@ -45,30 +45,31 @@
 #include "so_util.h"
 
 float postfx_pos[8] = {
-  -1.0f, 1.0f,
-  -1.0f, -1.0f,
-   1.0f, 1.0f,
-   1.0f, -1.0f
-};
+    -1.0f, 1.0f,
+    -1.0f, -1.0f,
+    1.0f, 1.0f,
+    1.0f, -1.0f};
 
 float postfx_texcoord[8] = {
-  0.0f, 0.0f,
-  0.0f, 1.0f,
-  1.0f, 0.0f,
-  1.0f, 1.0f
-};
+    0.0f, 0.0f,
+    0.0f, 1.0f,
+    1.0f, 0.0f,
+    1.0f, 1.0f};
 
 int SCREEN_W = DEF_SCREEN_W;
 int SCREEN_H = DEF_SCREEN_H;
 
 config_opts options;
-void loadOptions() {
+void loadOptions()
+{
   char buffer[30];
   int value;
 
   FILE *f = fopen(CONFIG_FILE_PATH, "rb");
-  if (f) {
-    while (EOF != fscanf(f, "%[^=]=%d\n", buffer, &value)) {
+  if (f)
+  {
+    while (EOF != fscanf(f, "%[^=]=%d\n", buffer, &value))
+    {
       if (strcmp("resolution", buffer) == 0)
         options.res = value;
       else if (strcmp("bilinear", buffer) == 0)
@@ -80,7 +81,9 @@ void loadOptions() {
       else if (strcmp("postfx", buffer) == 0)
         options.postfx = value;
     }
-  } else {
+  }
+  else
+  {
     options.res = 0;
     options.bilinear = 0;
     options.lang = 0;
@@ -88,7 +91,8 @@ void loadOptions() {
     options.postfx = 0;
   }
 
-  switch (options.res) {
+  switch (options.res)
+  {
   case 0:
     SCREEN_W = 960;
     SCREEN_H = 544;
@@ -110,11 +114,13 @@ int _opensles_user_freq = 32000;
 
 static so_module ff3_mod;
 
-void *__wrap_memcpy(void *dest, const void *src, size_t n) {
+void *__wrap_memcpy(void *dest, const void *src, size_t n)
+{
   return sceClibMemcpy(dest, src, n);
 }
 
-void *__wrap_memmove(void *dest, const void *src, size_t n) {
+void *__wrap_memmove(void *dest, const void *src, size_t n)
+{
   return sceClibMemmove(dest, src, n);
 }
 
@@ -124,7 +130,8 @@ int ret0(void) { return 0; }
 
 int ret1(void) { return 1; }
 
-int __android_log_print(int prio, const char *tag, const char *fmt, ...) {
+int __android_log_print(int prio, const char *tag, const char *fmt, ...)
+{
 #ifdef DEBUG
   va_list list;
   char string[512];
@@ -138,12 +145,13 @@ int __android_log_print(int prio, const char *tag, const char *fmt, ...) {
   return 0;
 }
 
-void __assert2(const char *file, int line, const char *func, const char *expr) {
+void __assert2(const char *file, int line, const char *func, const char *expr)
+{
   printf("assertion failed:\n%s:%d (%s): %s\n", file, line, func, expr);
 }
 
 static const short _C_toupper_[] = {
-    -1,   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+    -1, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
     0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
     0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22,
     0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e,
@@ -151,9 +159,9 @@ static const short _C_toupper_[] = {
     0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46,
     0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52,
     0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e,
-    0x5f, 0x60, 'A',  'B',  'C',  'D',  'E',  'F',  'G',  'H',  'I',  'J',
-    'K',  'L',  'M',  'N',  'O',  'P',  'Q',  'R',  'S',  'T',  'U',  'V',
-    'W',  'X',  'Y',  'Z',  0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82,
+    0x5f, 0x60, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+    'W', 'X', 'Y', 'Z', 0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82,
     0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e,
     0x8f, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a,
     0x9b, 0x9c, 0x9d, 0x9e, 0x9f, 0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6,
@@ -168,7 +176,8 @@ static const short _C_toupper_[] = {
 
 const short *_toupper_tab_ = _C_toupper_;
 
-enum MethodIDs {
+enum MethodIDs
+{
   UNKNOWN = 0,
   GET_CURRENT_FRAME, /**/
   LOAD_FILE,         /**/
@@ -187,7 +196,8 @@ enum MethodIDs {
   STOP_MOVIE
 } MethodIDs;
 
-typedef struct {
+typedef struct
+{
   char *name;
   enum MethodIDs id;
 } NameToMethodID;
@@ -210,10 +220,12 @@ static NameToMethodID name_to_method_ids[] = {
     {"stopMovie", STOP_MOVIE},
 };
 
-int GetMethodID(void *env, void *class, const char *name, const char *sig) {
+int GetMethodID(void *env, void *class, const char *name, const char *sig)
+{
 
   for (int i = 0; i < sizeof(name_to_method_ids) / sizeof(NameToMethodID);
-       i++) {
+       i++)
+  {
     if (strcmp(name, name_to_method_ids[i].name) == 0)
       return name_to_method_ids[i].id;
   }
@@ -222,10 +234,12 @@ int GetMethodID(void *env, void *class, const char *name, const char *sig) {
 }
 
 int GetStaticMethodID(void *env, void *class, const char *name,
-                      const char *sig) {
+                      const char *sig)
+{
 
   for (int i = 0; i < sizeof(name_to_method_ids) / sizeof(NameToMethodID);
-       i++) {
+       i++)
+  {
     if (strcmp(name, name_to_method_ids[i].name) == 0)
       return name_to_method_ids[i].id;
   }
@@ -234,32 +248,40 @@ int GetStaticMethodID(void *env, void *class, const char *name,
   return UNKNOWN;
 }
 
-int CallBooleanMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
-  switch (methodID) {
+int CallBooleanMethodV(void *env, void *obj, int methodID, uintptr_t *args)
+{
+  switch (methodID)
+  {
   default:
     return 0;
   }
 }
 
-float CallFloatMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
+float CallFloatMethodV(void *env, void *obj, int methodID, uintptr_t *args)
+{
   return 0.0f;
 }
 
-int CallIntMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
+int CallIntMethodV(void *env, void *obj, int methodID, uintptr_t *args)
+{
   return 0;
 }
 
-void *CallObjectMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
+void *CallObjectMethodV(void *env, void *obj, int methodID, uintptr_t *args)
+{
   return NULL;
 }
 
-void CallVoidMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
+void CallVoidMethodV(void *env, void *obj, int methodID, uintptr_t *args)
+{
   return;
 }
 
 void *CallStaticObjectMethodV(void *env, void *obj, int methodID,
-                              uintptr_t *args) {
-  switch (methodID) {
+                              uintptr_t *args)
+{
+  switch (methodID)
+  {
   case LOAD_FILE:
     return loadFile((char *)args[0]);
   case LOAD_RAW_FILE:
@@ -278,8 +300,10 @@ void *CallStaticObjectMethodV(void *env, void *obj, int methodID,
 }
 
 void CallStaticVoidMethodV(void *env, void *obj, int methodID,
-                           uintptr_t *args) {
-  switch (methodID) {
+                           uintptr_t *args)
+{
+  switch (methodID)
+  {
   case CREATE_SAVEFILE:
     createSaveFile((size_t)args[0]);
     break;
@@ -301,8 +325,10 @@ void CallStaticVoidMethodV(void *env, void *obj, int methodID,
 }
 
 int CallStaticBooleanMethodV(void *env, void *obj, int methodID,
-                             uintptr_t *args) {
-  switch (methodID) {
+                             uintptr_t *args)
+{
+  switch (methodID)
+  {
   case IS_DEVICE_ANDROID_TV:
     return isDeviceAndroidTV();
   case GET_MOVIE_STATE:
@@ -313,8 +339,10 @@ int CallStaticBooleanMethodV(void *env, void *obj, int methodID,
 }
 
 uint64_t CallStaticLongMethodV(void *env, void *obj, int methodID,
-                               uintptr_t *args) {
-  switch (methodID) {
+                               uintptr_t *args)
+{
+  switch (methodID)
+  {
   case GET_CURRENT_FRAME:
     return getCurrentFrame((uint64_t)args[0]);
   default:
@@ -322,8 +350,10 @@ uint64_t CallStaticLongMethodV(void *env, void *obj, int methodID,
   }
 }
 
-int CallStaticIntMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
-  switch (methodID) {
+int CallStaticIntMethodV(void *env, void *obj, int methodID, uintptr_t *args)
+{
+  switch (methodID)
+  {
   case GET_LANGUAGE:
     return getCurrentLanguage();
   default:
@@ -332,8 +362,10 @@ int CallStaticIntMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
 }
 
 float CallStaticFloatMethodV(void *env, void *obj, int methodID,
-                             uintptr_t *args) {
-  switch (methodID) {
+                             uintptr_t *args)
+{
+  switch (methodID)
+  {
   default:
     return 0.0f;
   }
@@ -343,12 +375,14 @@ void *FindClass(void) { return (void *)0x41414141; }
 
 void DeleteLocalRef(void *env, void *localRef) { return; }
 
-void *NewObjectV(void *env, void *clazz, int methodID, va_list args) {
+void *NewObjectV(void *env, void *clazz, int methodID, va_list args)
+{
   return NULL;
 }
 
 int GetStaticFieldID(void *env, void *clazz, const char *name,
-                     const char *sig) {
+                     const char *sig)
+{
   return 0;
 }
 
@@ -360,11 +394,13 @@ char *GetStringUTFChars(void *env, char *string, int *isCopy) { return string; }
 
 int GetStringUTFLength(void *env, char *string) { return strlen(string); }
 
-void GetStringUTFRegion(void *env, char *str, int start, int len, char *buf) {
+void GetStringUTFRegion(void *env, char *str, int start, int len, char *buf)
+{
   return;
 }
 
-int GetFieldID(void *env, void *clazz, const char *name, const char *sig) {
+int GetFieldID(void *env, void *clazz, const char *name, const char *sig)
+{
   return 0;
 }
 
@@ -372,41 +408,48 @@ int GetFloatField(void *env, void *obj, int fieldID) { return 0; }
 
 int GetArrayLength(void *env, jni_bytearray *obj) { return obj->size; }
 
-void *GetByteArrayElements(void *env, jni_bytearray *obj) {
+void *GetByteArrayElements(void *env, jni_bytearray *obj)
+{
   return obj->elements;
 }
 
-void *NewByteArray(void *env, size_t length) {
+void *NewByteArray(void *env, size_t length)
+{
   jni_bytearray *result = malloc(sizeof(jni_bytearray));
   result->elements = malloc(length);
   result->size = length;
   return result;
 }
 
-void *GetIntArrayElements(void *env, jni_intarray *obj) {
+void *GetIntArrayElements(void *env, jni_intarray *obj)
+{
   return obj->elements;
 }
 
-int ReleaseByteArrayElements(void *env, jni_bytearray *obj) {
+int ReleaseByteArrayElements(void *env, jni_bytearray *obj)
+{
   free(obj->elements);
   free(obj);
   return 0;
 }
 
-int ReleaseIntArrayElements(void *env, jni_intarray *obj) {
+int ReleaseIntArrayElements(void *env, jni_intarray *obj)
+{
   free(obj->elements);
   free(obj);
   return 0;
 }
 
 void SetByteArrayRegion(void *env, jni_bytearray *array, size_t start,
-                        size_t len, const unsigned char *buf) {
+                        size_t len, const unsigned char *buf)
+{
   memcpy(array->elements, &buf[start], len);
 }
 
 static char fake_env[0x1000];
 
-void InitJNIEnv(void) {
+void InitJNIEnv(void)
+{
   memset(fake_env, 'A', sizeof(fake_env));
   *(uintptr_t *)(fake_env + 0x00) =
       (uintptr_t)fake_env; // just point to itself...
@@ -451,7 +494,8 @@ void InitJNIEnv(void) {
 void *Android_JNI_GetEnv(void) { return fake_env; }
 
 int pthread_mutex_init_fake(pthread_mutex_t **uid,
-                            const pthread_mutexattr_t *mutexattr) {
+                            const pthread_mutexattr_t *mutexattr)
+{
   pthread_mutex_t *m = calloc(1, sizeof(pthread_mutex_t));
   if (!m)
     return -1;
@@ -461,7 +505,8 @@ int pthread_mutex_init_fake(pthread_mutex_t **uid,
                  : PTHREAD_MUTEX_INITIALIZER;
 
   int ret = pthread_mutex_init(m, mutexattr);
-  if (ret < 0) {
+  if (ret < 0)
+  {
     free(m);
     return -1;
   }
@@ -471,8 +516,10 @@ int pthread_mutex_init_fake(pthread_mutex_t **uid,
   return 0;
 }
 
-int pthread_mutex_destroy_fake(pthread_mutex_t **uid) {
-  if (uid && *uid && (uintptr_t)*uid > 0x8000) {
+int pthread_mutex_destroy_fake(pthread_mutex_t **uid)
+{
+  if (uid && *uid && (uintptr_t)*uid > 0x8000)
+  {
     pthread_mutex_destroy(*uid);
     free(*uid);
     *uid = NULL;
@@ -480,17 +527,23 @@ int pthread_mutex_destroy_fake(pthread_mutex_t **uid) {
   return 0;
 }
 
-int pthread_mutex_lock_fake(pthread_mutex_t **uid) {
+int pthread_mutex_lock_fake(pthread_mutex_t **uid)
+{
   int ret = 0;
-  if (!*uid) {
+  if (!*uid)
+  {
     ret = pthread_mutex_init_fake(uid, NULL);
-  } else if ((uintptr_t)*uid == 0x4000) {
+  }
+  else if ((uintptr_t)*uid == 0x4000)
+  {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     ret = pthread_mutex_init_fake(uid, &attr);
     pthread_mutexattr_destroy(&attr);
-  } else if ((uintptr_t)*uid == 0x8000) {
+  }
+  else if ((uintptr_t)*uid == 0x8000)
+  {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -502,17 +555,23 @@ int pthread_mutex_lock_fake(pthread_mutex_t **uid) {
   return pthread_mutex_lock(*uid);
 }
 
-int pthread_mutex_unlock_fake(pthread_mutex_t **uid) {
+int pthread_mutex_unlock_fake(pthread_mutex_t **uid)
+{
   int ret = 0;
-  if (!*uid) {
+  if (!*uid)
+  {
     ret = pthread_mutex_init_fake(uid, NULL);
-  } else if ((uintptr_t)*uid == 0x4000) {
+  }
+  else if ((uintptr_t)*uid == 0x4000)
+  {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     ret = pthread_mutex_init_fake(uid, &attr);
     pthread_mutexattr_destroy(&attr);
-  } else if ((uintptr_t)*uid == 0x8000) {
+  }
+  else if ((uintptr_t)*uid == 0x8000)
+  {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -524,7 +583,8 @@ int pthread_mutex_unlock_fake(pthread_mutex_t **uid) {
   return pthread_mutex_unlock(*uid);
 }
 
-int pthread_cond_init_fake(pthread_cond_t **cnd, const int *condattr) {
+int pthread_cond_init_fake(pthread_cond_t **cnd, const int *condattr)
+{
   pthread_cond_t *c = calloc(1, sizeof(pthread_cond_t));
   if (!c)
     return -1;
@@ -532,7 +592,8 @@ int pthread_cond_init_fake(pthread_cond_t **cnd, const int *condattr) {
   *c = PTHREAD_COND_INITIALIZER;
 
   int ret = pthread_cond_init(c, NULL);
-  if (ret < 0) {
+  if (ret < 0)
+  {
     free(c);
     return -1;
   }
@@ -542,24 +603,30 @@ int pthread_cond_init_fake(pthread_cond_t **cnd, const int *condattr) {
   return 0;
 }
 
-int pthread_cond_broadcast_fake(pthread_cond_t **cnd) {
-  if (!*cnd) {
+int pthread_cond_broadcast_fake(pthread_cond_t **cnd)
+{
+  if (!*cnd)
+  {
     if (pthread_cond_init_fake(cnd, NULL) < 0)
       return -1;
   }
   return pthread_cond_broadcast(*cnd);
 }
 
-int pthread_cond_signal_fake(pthread_cond_t **cnd) {
-  if (!*cnd) {
+int pthread_cond_signal_fake(pthread_cond_t **cnd)
+{
+  if (!*cnd)
+  {
     if (pthread_cond_init_fake(cnd, NULL) < 0)
       return -1;
   }
   return pthread_cond_signal(*cnd);
 }
 
-int pthread_cond_destroy_fake(pthread_cond_t **cnd) {
-  if (cnd && *cnd) {
+int pthread_cond_destroy_fake(pthread_cond_t **cnd)
+{
+  if (cnd && *cnd)
+  {
     pthread_cond_destroy(*cnd);
     free(*cnd);
     *cnd = NULL;
@@ -567,8 +634,10 @@ int pthread_cond_destroy_fake(pthread_cond_t **cnd) {
   return 0;
 }
 
-int pthread_cond_wait_fake(pthread_cond_t **cnd, pthread_mutex_t **mtx) {
-  if (!*cnd) {
+int pthread_cond_wait_fake(pthread_cond_t **cnd, pthread_mutex_t **mtx)
+{
+  if (!*cnd)
+  {
     if (pthread_cond_init_fake(cnd, NULL) < 0)
       return -1;
   }
@@ -576,8 +645,10 @@ int pthread_cond_wait_fake(pthread_cond_t **cnd, pthread_mutex_t **mtx) {
 }
 
 int pthread_cond_timedwait_fake(pthread_cond_t **cnd, pthread_mutex_t **mtx,
-                                const struct timespec *t) {
-  if (!*cnd) {
+                                const struct timespec *t)
+{
+  if (!*cnd)
+  {
     if (pthread_cond_init_fake(cnd, NULL) < 0)
       return -1;
   }
@@ -585,11 +656,13 @@ int pthread_cond_timedwait_fake(pthread_cond_t **cnd, pthread_mutex_t **mtx,
 }
 
 int pthread_create_fake(pthread_t *thread, const void *unused, void *entry,
-                        void *arg) {
+                        void *arg)
+{
   return pthread_create(thread, NULL, entry, arg);
 }
 
-int pthread_once_fake(volatile int *once_control, void (*init_routine)(void)) {
+int pthread_once_fake(volatile int *once_control, void (*init_routine)(void))
+{
   if (!once_control || !init_routine)
     return -1;
   if (__sync_lock_test_and_set(once_control, 1) == 0)
@@ -599,8 +672,10 @@ int pthread_once_fake(volatile int *once_control, void (*init_routine)(void)) {
 
 int gettid(void) { return sceKernelGetThreadId(); }
 
-char *getcwd(char *buf, size_t size) {
-  if (buf) {
+char *getcwd(char *buf, size_t size)
+{
+  if (buf)
+  {
     buf[0] = '\0';
     return buf;
   }
@@ -610,15 +685,20 @@ char *getcwd(char *buf, size_t size) {
 int this_width;
 int this_height;
 
-void setup_viewport(int width, int height) {
+void setup_viewport(int width, int height)
+{
   int i3 = width * 3;
-  if (i3 >= height * 4) {
+  if (i3 >= height * 4)
+  {
     this_height = height;
     this_width = width;
-    if (this_width > (this_height * 21) / 9) {
+    if (this_width > (this_height * 21) / 9)
+    {
       this_width = (this_height * 21) / 9;
     }
-  } else {
+  }
+  else
+  {
     this_width = width;
     this_height = i3 / 4;
   }
@@ -631,10 +711,11 @@ GLuint frag, vert, fb, fb_tex, postfx_prog;
 uint16_t *postfx_indices;
 float *postfx_texcoords, *postfx_vertices;
 
-void loadShader(int is_vertex, char *file) {
+void loadShader(int is_vertex, char *file)
+{
   SceIoStat st;
   sceIoGetstat(file, &st);
-  char *code = (char*)malloc(st.st_size);
+  char *code = (char *)malloc(st.st_size);
 
   FILE *f = fopen(file, "rb");
   fread(code, 1, st.st_size, f);
@@ -649,11 +730,13 @@ void loadShader(int is_vertex, char *file) {
 }
 
 extern int editText;
-int main_thread(SceSize args, void *argp) {
+int main_thread(SceSize args, void *argp)
+{
 
   int has_low_res;
 
-  switch (options.msaa) {
+  switch (options.msaa)
+  {
   case 0:
     has_low_res = vglInitExtended(0, SCREEN_W, SCREEN_H,
                                   MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024,
@@ -670,12 +753,14 @@ int main_thread(SceSize args, void *argp) {
                                   SCE_GXM_MULTISAMPLE_4X);
     break;
   }
-  if (has_low_res) {
+  if (has_low_res)
+  {
     SCREEN_W = DEF_SCREEN_W;
     SCREEN_H = DEF_SCREEN_H;
   }
 
-  if (options.postfx) {
+  if (options.postfx)
+  {
     glGenTextures(1, &fb_tex);
     glBindTexture(GL_TEXTURE_2D, fb_tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_W, SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -688,9 +773,11 @@ int main_thread(SceSize args, void *argp) {
     char path[512];
     SceIoDirent d;
     SceUID fd = sceIoDopen("app0:shaders");
-    while (sceIoDread(fd, &d) > 0) {
+    while (sceIoDread(fd, &d) > 0)
+    {
       sprintf(path, "%d_", options.postfx);
-      if (strstr(d.d_name, path)) {
+      if (strstr(d.d_name, path))
+      {
         sprintf(path, "app0:shaders/%s", d.d_name);
         loadShader(strncmp(&d.d_name[strlen(d.d_name) - 5], "_f.cg", 5) == 0 ? 0 : 1, path);
       }
@@ -712,7 +799,8 @@ int main_thread(SceSize args, void *argp) {
 
   readHeader();
   setup_viewport(SCREEN_W, SCREEN_H);
-  while (1) {
+  while (1)
+  {
 
     SceTouchData touch;
     float coordinates[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -722,7 +810,8 @@ int main_thread(SceSize args, void *argp) {
 
     int reportNum = touch.reportNum > 2 ? 2 : touch.reportNum;
 
-    for (n = 0; n < reportNum; n++) {
+    for (n = 0; n < reportNum; n++)
+    {
       coordinates[n * 2] = (float)touch.report[n].x / 1920.0f;
       coordinates[n * 2 + 1] = (float)touch.report[n].y / 1088.0f;
     }
@@ -761,17 +850,18 @@ int main_thread(SceSize args, void *argp) {
               coordinates[2], coordinates[3], mask);
 
     ff3_render(fake_env, 0, this_width, this_height, 0);
-    if (options.postfx) {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glBindTexture(GL_TEXTURE_2D, fb_tex);
-        glUseProgram(postfx_prog);
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glUseProgram(0);
-        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    if (options.postfx)
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindTexture(GL_TEXTURE_2D, fb_tex);
+      glUseProgram(postfx_prog);
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glUseProgram(0);
+      glBindFramebuffer(GL_FRAMEBUFFER, fb);
     }
     vglSwapBuffers(editText == -1 ? GL_FALSE : GL_TRUE);
   }
@@ -779,7 +869,8 @@ int main_thread(SceSize args, void *argp) {
   return 0;
 }
 
-void patch_game(void) {
+void patch_game(void)
+{
 #ifdef DEBUG
   hook_thumb(ff3_mod.text_base + 0xe58b6, (uintptr_t)&printf);
 #endif
@@ -813,48 +904,59 @@ static int __stack_chk_guard_fake = 0x42424242;
 static FILE __sF_fake[0x100][3];
 
 void *mmap(void *addr, size_t length, int prot, int flags, int fd,
-           off_t offset) {
+           off_t offset)
+{
   return malloc(length);
 }
 
-int munmap(void *addr, size_t length) {
+int munmap(void *addr, size_t length)
+{
   free(addr);
   return 0;
 }
 
-void *AAssetManager_open(void *mgr, const char *filename, int mode) {
+void *AAssetManager_open(void *mgr, const char *filename, int mode)
+{
   printf("AAssetManager_open\n");
   return NULL;
 }
 
-void *AAsset_close() {
+void *AAsset_close()
+{
   printf("AAsset_close\n");
   return NULL;
 }
 
-void *AAssetManager_fromJava() {
+void *AAssetManager_fromJava()
+{
   printf("AAssetManager_fromJava\n");
   return NULL;
 }
 
-void *AAsset_read() {
+void *AAsset_read()
+{
   printf("AAsset_read\n");
   return NULL;
 }
 
-void *AAsset_seek() {
+void *AAsset_seek()
+{
   printf("AAsset_seek\n");
   return NULL;
 }
 
-void *AAsset_getLength() {
+void *AAsset_getLength()
+{
   printf("AAsset_getLength\n");
   return NULL;
 }
 
-void glTexParameteriHook(GLenum target, GLenum pname, GLint param) {
-  if (options.bilinear) {
-    if (pname == GL_TEXTURE_MIN_FILTER || pname == GL_TEXTURE_MAG_FILTER) {
+void glTexParameteriHook(GLenum target, GLenum pname, GLint param)
+{
+  if (options.bilinear)
+  {
+    if (pname == GL_TEXTURE_MIN_FILTER || pname == GL_TEXTURE_MAG_FILTER)
+    {
       glTexParameteri(target, pname, GL_LINEAR);
       return;
     }
@@ -1060,24 +1162,28 @@ static so_default_dynlib default_dynlib[] = {
     {"vsnprintf", (uintptr_t)&vsnprintf},
 };
 
-int check_kubridge(void) {
+int check_kubridge(void)
+{
   int search_unk[2];
   return _vshKernelSearchModuleByName("kubridge", search_unk);
 }
 
-int file_exists(const char *path) {
+int file_exists(const char *path)
+{
   SceIoStat stat;
   return sceIoGetstat(path, &stat) >= 0;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
   // Check if we want to start the companion app
   sceAppUtilInit(&(SceAppUtilInitParam){}, &(SceAppUtilBootParam){});
   SceAppUtilAppEventParam eventParam;
   sceClibMemset(&eventParam, 0, sizeof(SceAppUtilAppEventParam));
   sceAppUtilReceiveAppEvent(&eventParam);
-  if (eventParam.type == 0x05) {
+  if (eventParam.type == 0x05)
+  {
     char buffer[2048];
     sceAppUtilAppEventParseLiveArea(&eventParam, buffer);
     if (strstr(buffer, "-config"))
