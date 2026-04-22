@@ -215,11 +215,6 @@ void playMovie() {
   playerInit.autoStart = GL_TRUE;
 
   movie_player = sceAvPlayerInit(&playerInit);
-  if (movie_player < 0) {
-    movie_player_audio_shutdown();
-    return;
-  }
-
   if (sceAvPlayerAddSource(movie_player, "ux0:data/ff3/opening.mp4") < 0) {
     sceAvPlayerClose(movie_player);
     movie_player = -1;
