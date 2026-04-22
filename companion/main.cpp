@@ -60,24 +60,29 @@ config_opts options;
 bool bilinear_filter;
 
 void loadOptions() {
-  char buffer[30];
-  int value;
+  char line[128];
+  char key[30];
+  int value = 0;
+
+  options.res = 0;
+  options.bilinear = 0;
+  options.lang = 0;
+  options.msaa = 2;
+  options.postfx = 0;
 
   FILE *f = fopen(CONFIG_FILE_PATH, "rb");
   if (f) {
-    while (EOF != fscanf(f, "%[^=]=%d\n", buffer, &value)) {
-      if (strcmp("resolution", buffer) == 0) options.res = value;
-      else if (strcmp("bilinear", buffer) == 0) options.bilinear = value;
-      else if (strcmp("language", buffer) == 0) options.lang = value;
-      else if (strcmp("antialiasing", buffer) == 0) options.msaa = value;
-      else if (strcmp("postfx", buffer) == 0) options.postfx = value;
+    while (fgets(line, sizeof(line), f)) {
+      if (sscanf(line, "%29[^=]=%d", key, &value) != 2)
+        continue;
+
+      if (strcmp("resolution", key) == 0) options.res = value;
+      else if (strcmp("bilinear", key) == 0) options.bilinear = value;
+      else if (strcmp("language", key) == 0) options.lang = value;
+      else if (strcmp("antialiasing", key) == 0) options.msaa = value;
+      else if (strcmp("postfx", key) == 0) options.postfx = value;
     }
-  } else {
-    options.res = 0;
-    options.bilinear = 0;
-    options.lang = 0;
-    options.msaa = 2;
-    options.postfx = 0;
+    fclose(f);
   }
 
   bilinear_filter = options.bilinear ? true : false;
@@ -143,12 +148,17 @@ int main(int argc, char *argv[]) {
   int PostFxNum = 1;
   SceIoDirent d;
   SceUID fd = sceIoDopen("app0:shaders");
-  while (sceIoDread(fd, &d) > 0) {
+  while (fd >= 0 && sceIoDread(fd, &d) > 0) {
     int n;
     char name[64];
-    sscanf(d.d_name, "%d_%s", &n, name);
-	strcpy(name, strchr(d.d_name, '_') + 1);
+    char *first_sep = strchr(d.d_name, '_');
+    if (sscanf(d.d_name, "%d_%63s", &n, name) != 2 || !first_sep || n < 0 || n >= 64)
+      continue;
+
+	strcpy(name, first_sep + 1);
 	char *end_of_name = strchr(name, '_');
+	if (!end_of_name)
+	  continue;
 	end_of_name[0] = 0;
     if (PostFxName[n] == NULL) {
       PostFxName[n] = (char *)malloc(strlen(name) + 1);
@@ -157,7 +167,8 @@ int main(int argc, char *argv[]) {
         PostFxNum = n + 1;
     }
   }
-  sceIoDclose(fd);
+  if (fd >= 0)
+    sceIoDclose(fd);
 
   while (exit_code == 0xDEAD) {
     desc = nullptr;
