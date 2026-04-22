@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5)
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   if(DEFINED ENV{VITASDK})
@@ -15,11 +15,82 @@ set(VITA_TITLEID  "FF3000000")
 set(VITA_VERSION  "01.10")
 set(VITA_MKSFOEX_FLAGS "-d ATTRIBUTE2=12")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wl,-q,--wrap,memcpy,--wrap,memmove,--wrap,memset -Wall -O3 -mfloat-abi=softfp")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wl,-q,--wrap,memcpy,--wrap,memmove,--wrap,memset -Wall -O3 -mfloat-abi=hard")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17")
+
+set(ICU_DATA_DIR "")
+if(DEFINED ENV{VITASDK})
+  file(GLOB ICU_DATA_CANDIDATES "$ENV{VITASDK}/arm-vita-eabi/share/icu/*/icudt*l")
+  list(SORT ICU_DATA_CANDIDATES ORDER DESCENDING)
+  foreach(candidate ${ICU_DATA_CANDIDATES})
+    if(IS_DIRECTORY "${candidate}" AND EXISTS "${candidate}/cnvalias.icu")
+      set(ICU_DATA_DIR "${candidate}")
+      break()
+    endif()
+  endforeach()
+endif()
+
+if(NOT ICU_DATA_DIR AND EXISTS "${CMAKE_SOURCE_DIR}/icudt73l")
+  set(ICU_DATA_DIR "${CMAKE_SOURCE_DIR}/icudt73l")
+endif()
+
+if(NOT ICU_DATA_DIR)
+  message(FATAL_ERROR "Could not locate an ICU data directory with converter files")
+endif()
+
+get_filename_component(ICU_DATA_BASENAME "${ICU_DATA_DIR}" NAME)
+
+set(VPK_FILE_ARGS
+  ${CMAKE_SOURCE_DIR}/sce_sys/icon0.png sce_sys/icon0.png
+  ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/bg0.png sce_sys/livearea/contents/bg0.png
+  ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
+  ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/config.png sce_sys/livearea/contents/config.png
+  ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
+  ${CMAKE_SOURCE_DIR}/NotoSansJP-Regular.ttf NotoSansJP-Regular.ttf
+  ${CMAKE_SOURCE_DIR}/NotoSansSC-Regular.ttf NotoSansSC-Regular.ttf
+  ${CMAKE_SOURCE_DIR}/NotoSansKR-Regular.ttf NotoSansKR-Regular.ttf
+  ${CMAKE_BINARY_DIR}/companion.bin companion.bin
+)
+
+set(ICU_WINDOWS_1252_SOURCE "")
+if(EXISTS "${ICU_DATA_DIR}/windows-1252.cnv")
+  set(ICU_WINDOWS_1252_SOURCE "${ICU_DATA_DIR}/windows-1252.cnv")
+elseif(EXISTS "${ICU_DATA_DIR}/ibm-1252_P100-2000.cnv")
+  set(ICU_WINDOWS_1252_SOURCE "${ICU_DATA_DIR}/ibm-1252_P100-2000.cnv")
+endif()
+
+if(ICU_WINDOWS_1252_SOURCE)
+  list(APPEND VPK_FILE_ARGS
+    ${ICU_WINDOWS_1252_SOURCE} ${ICU_DATA_BASENAME}/windows-1252.cnv
+  )
+endif()
+
+foreach(icu_file
+    cnvalias.icu
+    ibm-943_P15A-2003.cnv
+    ibm-5348_P100-1997.cnv
+    confusables.cfu
+    unames.icu)
+  if(EXISTS "${ICU_DATA_DIR}/${icu_file}")
+    list(APPEND VPK_FILE_ARGS
+      ${ICU_DATA_DIR}/${icu_file} ${ICU_DATA_BASENAME}/${icu_file}
+    )
+  endif()
+endforeach()
+
+list(APPEND VPK_FILE_ARGS
+  ${CMAKE_SOURCE_DIR}/shaders/1_Negative_f.cg shaders/1_Negative_f.cg
+  ${CMAKE_SOURCE_DIR}/shaders/1_Negative_v.cg shaders/1_Negative_v.cg
+  ${CMAKE_SOURCE_DIR}/shaders/2_FXAA_f.cg shaders/2_FXAA_f.cg
+  ${CMAKE_SOURCE_DIR}/shaders/2_FXAA_v.cg shaders/2_FXAA_v.cg
+  ${CMAKE_SOURCE_DIR}/shaders/3_Sepia_f.cg shaders/3_Sepia_f.cg
+  ${CMAKE_SOURCE_DIR}/shaders/3_Sepia_v.cg shaders/3_Sepia_v.cg
+  ${CMAKE_SOURCE_DIR}/shaders/4_Greyscale_f.cg shaders/4_Greyscale_f.cg
+  ${CMAKE_SOURCE_DIR}/shaders/4_Greyscale_v.cg shaders/4_Greyscale_v.cg
+)
 
 add_executable(FF3.elf
-  loader/main.c
+  loader/main.cpp
   loader/dialog.c
   loader/so_util.c
   loader/bridge.c
@@ -50,10 +121,17 @@ target_link_libraries(FF3.elf
   SceAvPlayer_stub
   OpenSLES
   sndfile
+  FLAC
+  vorbisenc
+  vorbisfile
+  vorbis
+  ogg
   SDL
+  SceAudio_stub
   SceHid_stub
-  icudata
+  SceMotion_stub
   icuuc
+  icudata
   z
   -Wl,--whole-archive
   pthread
@@ -72,6 +150,7 @@ target_link_libraries(companion
   vitashark
   mathneon
   SceAppMgr_stub
+  SceAppUtil_stub
   SceAudio_stub
   SceCtrl_stub
   SceCommonDialog_stub
@@ -89,28 +168,7 @@ vita_create_self(companion.bin companion UNSAFE)
 vita_create_vpk(FF3.vpk ${VITA_TITLEID} eboot.bin
   VERSION ${VITA_VERSION}
   NAME ${VITA_APP_NAME}
-  FILE ${CMAKE_SOURCE_DIR}/sce_sys/icon0.png sce_sys/icon0.png
-       ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/bg0.png sce_sys/livearea/contents/bg0.png
-       ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
-       ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/config.png sce_sys/livearea/contents/config.png
-       ${CMAKE_SOURCE_DIR}/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
-       ${CMAKE_SOURCE_DIR}/NotoSansJP-Regular.ttf NotoSansJP-Regular.ttf
-       ${CMAKE_SOURCE_DIR}/NotoSansSC-Regular.ttf NotoSansSC-Regular.ttf
-       ${CMAKE_SOURCE_DIR}/NotoSansKR-Regular.ttf NotoSansKR-Regular.ttf
-       ${CMAKE_BINARY_DIR}/companion.bin companion.bin
-       ${CMAKE_SOURCE_DIR}/icudt59l/cnvalias.icu icudt59l/cnvalias.icu
-       ${CMAKE_SOURCE_DIR}/icudt59l/confusables.cfu icudt59l/confusables.cfu
-       ${CMAKE_SOURCE_DIR}/icudt59l/unames.icu icudt59l/unames.icu
-       ${CMAKE_SOURCE_DIR}/icudt59l/ibm-943_P15A-2003.cnv icudt59l/ibm-943_P15A-2003.cnv
-       ${CMAKE_SOURCE_DIR}/icudt59l/ibm-5348_P100-1997.cnv icudt59l/ibm-5348_P100-1997.cnv
-       ${CMAKE_SOURCE_DIR}/shaders/1_Negative_f.cg shaders/1_Negative_f.cg
-       ${CMAKE_SOURCE_DIR}/shaders/1_Negative_v.cg shaders/1_Negative_v.cg
-       ${CMAKE_SOURCE_DIR}/shaders/2_FXAA_f.cg shaders/2_FXAA_f.cg
-       ${CMAKE_SOURCE_DIR}/shaders/2_FXAA_v.cg shaders/2_FXAA_v.cg
-       ${CMAKE_SOURCE_DIR}/shaders/3_Sepia_f.cg shaders/3_Sepia_f.cg
-       ${CMAKE_SOURCE_DIR}/shaders/3_Sepia_v.cg shaders/3_Sepia_v.cg
-       ${CMAKE_SOURCE_DIR}/shaders/4_Greyscale_f.cg shaders/4_Greyscale_f.cg
-       ${CMAKE_SOURCE_DIR}/shaders/4_Greyscale_v.cg shaders/4_Greyscale_v.cg
+  FILE ${VPK_FILE_ARGS}
 )
 
 add_custom_target(copy
