@@ -79,15 +79,38 @@ void gpu_free(void *p, void *ptr) {
 }
 
 void movie_player_audio_init(void) {
-  audio_port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, 48000, SCE_AUDIO_OUT_MODE_STEREO);
-  audio_new = 1;
+  audio_port = -1;
+  audio_new = 0;
+
+  for (int i = 0; i < 8; i++) {
+    if (sceAudioOutGetConfig(i, SCE_AUDIO_OUT_CONFIG_TYPE_LEN) >= 0) {
+      audio_port = i;
+      break;
+    }
+  }
+
+  if (audio_port == -1) {
+    audio_port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, 48000, SCE_AUDIO_OUT_MODE_STEREO);
+    audio_new = 1;
+  } else {
+    audio_len = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_LEN);
+    audio_freq = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_FREQ);
+    audio_mode = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_MODE);
+  }
 }
 
 void movie_player_audio_shutdown(void) {
-  if (audio_port >= 0) {
-    sceAudioOutReleasePort(audio_port);
-    audio_port = -1;
+  if (audio_port < 0) {
+    return;
   }
+
+  if (audio_new) {
+    sceAudioOutReleasePort(audio_port);
+  } else {
+    sceAudioOutSetConfig(audio_port, audio_len, audio_freq, (SceAudioOutMode)audio_mode);
+  }
+
+  audio_port = -1;
 }
 
 int movie_player_audio_thread(SceSize args, void *argp) {
