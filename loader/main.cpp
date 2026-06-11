@@ -25,12 +25,12 @@ extern "C" {
 #include <SLES/OpenSLES_Android.h>
 }
 
-#include <malloc.h>
-#include <pthread.h>
-#include <stdarg.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <malloc.h>
+#include <pthread.h>
+#include <stdarg.h>
 #include <unistd.h>
 
 #include <cmath>
@@ -59,19 +59,9 @@ extern "C" {
 
 #include "softfp_wrappers.hpp"
 
-float postfx_pos[8] = {
-  -1.0f, 1.0f,
-  -1.0f, -1.0f,
-   1.0f, 1.0f,
-   1.0f, -1.0f
-};
+float postfx_pos[8] = {-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f};
 
-float postfx_texcoord[8] = {
-  0.0f, 0.0f,
-  0.0f, 1.0f,
-  1.0f, 0.0f,
-  1.0f, 1.0f
-};
+float postfx_texcoord[8] = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
 int SCREEN_W = DEF_SCREEN_W;
 int SCREEN_H = DEF_SCREEN_H;
@@ -268,7 +258,8 @@ int CallBooleanMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
   }
 }
 
-SOFTFP_ABI float CallFloatMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
+SOFTFP_ABI float CallFloatMethodV(void *env, void *obj, int methodID,
+                                  uintptr_t *args) {
   return 0.0f;
 }
 
@@ -383,8 +374,8 @@ int CallStaticIntMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
   }
 }
 
-SOFTFP_ABI SOFTFP_ABI float CallStaticFloatMethodV(void *env, void *obj, int methodID,
-                             uintptr_t *args) {
+SOFTFP_ABI SOFTFP_ABI float
+CallStaticFloatMethodV(void *env, void *obj, int methodID, uintptr_t *args) {
   switch (methodID) {
   default:
     return 0.0f;
@@ -404,7 +395,8 @@ static int find_local_ref_slot(void *ref) {
   if (!ref)
     return -1;
 
-  for (size_t index = 0; index < sizeof(local_refs) / sizeof(local_refs[0]); ++index) {
+  for (size_t index = 0; index < sizeof(local_refs) / sizeof(local_refs[0]);
+       ++index) {
     if (local_refs[index].ref == ref)
       return (int)index;
   }
@@ -422,7 +414,8 @@ static void register_local_ref(void *ref, JNILocalRefType type) {
     return;
   }
 
-  for (size_t index = 0; index < sizeof(local_refs) / sizeof(local_refs[0]); ++index) {
+  for (size_t index = 0; index < sizeof(local_refs) / sizeof(local_refs[0]);
+       ++index) {
     if (!local_refs[index].ref) {
       local_refs[index].ref = ref;
       local_refs[index].type = type;
@@ -855,7 +848,8 @@ int main_thread(SceSize args, void *argp) {
   if (options.postfx) {
     glGenTextures(1, &fb_tex);
     glBindTexture(GL_TEXTURE_2D, fb_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_W, SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_W, SCREEN_H, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, NULL);
     glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, fb_tex, 0);
@@ -869,7 +863,9 @@ int main_thread(SceSize args, void *argp) {
       sprintf(path, "%d_", options.postfx);
       if (strstr(d.d_name, path)) {
         sprintf(path, "app0:shaders/%s", d.d_name);
-        loadShader(strncmp(&d.d_name[strlen(d.d_name) - 5], "_f.cg", 5) == 0 ? 0 : 1, path);
+        loadShader(
+            strncmp(&d.d_name[strlen(d.d_name) - 5], "_f.cg", 5) == 0 ? 0 : 1,
+            path);
       }
     }
     sceIoDclose(fd);
@@ -883,14 +879,14 @@ int main_thread(SceSize args, void *argp) {
   }
 
   int (*ff3_render)(char *, int, int, int, int) =
-      (int (*)(char*, int, int, int, int))so_symbol(&ff3_mod, "render");
+      (int (*)(char *, int, int, int, int))so_symbol(&ff3_mod, "render");
 
   /* ff3_touch has float args — the .so uses softfp ABI, so we need to
    * call it with softfp calling convention (floats in r0-r3, not VFP regs) */
   SOFTFP_ABI int (*ff3_touch)(int, int, int, int, float, float, float, float,
-                   unsigned int) =
-      (SOFTFP_ABI int (*)(int, int, int, int, float, float, float, float, unsigned int))
-      so_symbol(&ff3_mod, "touch");
+                              unsigned int) =
+      (SOFTFP_ABI int (*)(int, int, int, int, float, float, float, float,
+                          unsigned int))so_symbol(&ff3_mod, "touch");
 
   if (!readHeader())
     fatal_error("Error could not read %s.", "ux0:/data/ff3/main.obb");
@@ -945,16 +941,16 @@ int main_thread(SceSize args, void *argp) {
 
     ff3_render(fake_env, 0, this_width, this_height, 0);
     if (options.postfx) {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glBindTexture(GL_TEXTURE_2D, fb_tex);
-        glUseProgram(postfx_prog);
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glUseProgram(0);
-        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindTexture(GL_TEXTURE_2D, fb_tex);
+      glUseProgram(postfx_prog);
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glUseProgram(0);
+      glBindFramebuffer(GL_FRAMEBUFFER, fb);
     }
     vglSwapBuffers(editText == -1 ? GL_FALSE : GL_TRUE);
   }
@@ -1142,7 +1138,7 @@ static so_default_dynlib default_dynlib[] = {
     {"atan2f", WRAP(atan2f)},
     {"atoi", (uintptr_t)&atoi},
     {"calloc", (uintptr_t)&calloc},
-    {"cos", WRAP((double(*)(double))cos)},
+    {"cos", WRAP((double (*)(double))cos)},
     {"cosf", WRAP(cosf)},
     {"dlopen", (uintptr_t)&ret1},
     {"dlsym", (uintptr_t)&ret1},
@@ -1219,13 +1215,13 @@ static so_default_dynlib default_dynlib[] = {
     {"qsort", (uintptr_t)&qsort},
     {"raise", (uintptr_t)&raise},
     {"realloc", (uintptr_t)&realloc},
-    {"sin", WRAP((double(*)(double))sin)},
+    {"sin", WRAP((double (*)(double))sin)},
     {"sinf", WRAP(sinf)},
     {"slCreateEngine", (uintptr_t)&slCreateEngine},
     {"snprintf", (uintptr_t)&snprintf},
     {"srand48", (uintptr_t)&srand48},
     {"sprintf", (uintptr_t)&sprintf},
-    {"sqrt", WRAP((double(*)(double))sqrt)},
+    {"sqrt", WRAP((double (*)(double))sqrt)},
     {"sqrtf", WRAP(sqrtf)},
     {"strcat", (uintptr_t)&strcat},
     {"strchr", (uintptr_t)&strchr},

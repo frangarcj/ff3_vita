@@ -1,13 +1,13 @@
 #include "bridge.h"
 #include <limits.h>
+#include <malloc.h>
 #include <math.h>
-#include <vitasdk.h>
-#include <stddef.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
+#include <vitasdk.h>
 
 #include "stb_image.h"
 #include "stb_truetype.h"
@@ -61,9 +61,7 @@ void *mem_alloc(void *p, uint32_t align, uint32_t size) {
   return memalign(align, size);
 }
 
-void mem_free(void *p, void *ptr) {
-  free(ptr);
-}
+void mem_free(void *p, void *ptr) { free(ptr); }
 
 void *gpu_alloc(void *p, uint32_t align, uint32_t size) {
   if (align < FB_ALIGNMENT) {
@@ -90,12 +88,15 @@ void movie_player_audio_init(void) {
   }
 
   if (audio_port == -1) {
-    audio_port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, 48000, SCE_AUDIO_OUT_MODE_STEREO);
+    audio_port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, 48000,
+                                     SCE_AUDIO_OUT_MODE_STEREO);
     audio_new = 1;
   } else {
     audio_len = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_LEN);
-    audio_freq = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_FREQ);
-    audio_mode = sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_MODE);
+    audio_freq =
+        sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_FREQ);
+    audio_mode =
+        sceAudioOutGetConfig(audio_port, SCE_AUDIO_OUT_CONFIG_TYPE_MODE);
   }
 }
 
@@ -107,7 +108,8 @@ void movie_player_audio_shutdown(void) {
   if (audio_new) {
     sceAudioOutReleasePort(audio_port);
   } else {
-    sceAudioOutSetConfig(audio_port, audio_len, audio_freq, (SceAudioOutMode)audio_mode);
+    sceAudioOutSetConfig(audio_port, audio_len, audio_freq,
+                         (SceAudioOutMode)audio_mode);
   }
 
   audio_port = -1;
@@ -119,7 +121,10 @@ int movie_player_audio_thread(SceSize args, void *argp) {
 
   while (player_state == PLAYER_ACTIVE && sceAvPlayerIsActive(movie_player)) {
     if (sceAvPlayerGetAudioData(movie_player, &frame)) {
-      sceAudioOutSetConfig(audio_port, 1024, frame.details.audio.sampleRate, frame.details.audio.channelCount == 1 ? SCE_AUDIO_OUT_MODE_MONO : SCE_AUDIO_OUT_MODE_STEREO);
+      sceAudioOutSetConfig(audio_port, 1024, frame.details.audio.sampleRate,
+                           frame.details.audio.channelCount == 1
+                               ? SCE_AUDIO_OUT_MODE_MONO
+                               : SCE_AUDIO_OUT_MODE_STEREO);
       sceAudioOutOutput(audio_port, frame.pData);
     } else {
       sceKernelDelayThread(1000);
@@ -138,14 +143,14 @@ void movie_player_draw(void) {
       if (sceAvPlayerGetVideoData(movie_player, &frame)) {
         movie_first_frame_drawn = 1;
         movie_frame_idx = (movie_frame_idx + 1) % 2;
-        sceGxmTextureInitLinear(
-          movie_tex[movie_frame_idx],
-          frame.pData,
-          SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1,
-          frame.details.video.width,
-          frame.details.video.height, 0);
-        sceGxmTextureSetMinFilter(movie_tex[movie_frame_idx], SCE_GXM_TEXTURE_FILTER_LINEAR);
-        sceGxmTextureSetMagFilter(movie_tex[movie_frame_idx], SCE_GXM_TEXTURE_FILTER_LINEAR);
+        sceGxmTextureInitLinear(movie_tex[movie_frame_idx], frame.pData,
+                                SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1,
+                                frame.details.video.width,
+                                frame.details.video.height, 0);
+        sceGxmTextureSetMinFilter(movie_tex[movie_frame_idx],
+                                  SCE_GXM_TEXTURE_FILTER_LINEAR);
+        sceGxmTextureSetMagFilter(movie_tex[movie_frame_idx],
+                                  SCE_GXM_TEXTURE_FILTER_LINEAR);
       }
       if (movie_first_frame_drawn) {
         glUseProgram(movie_prog);
@@ -191,16 +196,19 @@ void movie_player_init() {
   glGenTextures(2, movie_frame);
   for (int i = 0; i < 2; i++) {
     glBindTexture(GL_TEXTURE_2D, movie_frame[i]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 960, 544, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 960, 544, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, NULL);
     movie_tex[i] = vglGetGxmTexture(GL_TEXTURE_2D);
     vglFree(vglGetTexDataPointer(GL_TEXTURE_2D));
   }
 
   movie_vs = glCreateShader(GL_VERTEX_SHADER);
-  glShaderBinary(1, &movie_vs, 0, movie_v, size_movie_v);
+  glShaderSource(movie_vs, 1, &movie_v, NULL);
+  glCompileShader(movie_vs);
 
   movie_fs = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderBinary(1, &movie_fs, 0, movie_f, size_movie_f);
+  glShaderSource(movie_fs, 1, &movie_f, NULL);
+  glCompileShader(movie_fs);
 
   movie_prog = glCreateProgram();
   glAttachShader(movie_prog, movie_vs);
@@ -208,10 +216,9 @@ void movie_player_init() {
   glBindAttribLocation(movie_prog, 0, "inPos");
   glBindAttribLocation(movie_prog, 1, "inTex");
   glLinkProgram(movie_prog);
-	
+
   movie_player_inited = 1;
 }
-
 
 void playMovie() {
   SceIoStat st;
@@ -238,6 +245,10 @@ void playMovie() {
   playerInit.autoStart = GL_TRUE;
 
   movie_player = sceAvPlayerInit(&playerInit);
+  if (!movie_player) {
+    movie_player_audio_shutdown();
+    return;
+  }
   if (sceAvPlayerAddSource(movie_player, "ux0:data/ff3/opening.mp4") < 0) {
     sceAvPlayerClose(movie_player);
     movie_player = -1;
@@ -245,7 +256,9 @@ void playMovie() {
     return;
   }
 
-  audio_thid = sceKernelCreateThread("movie_audio_thread", movie_player_audio_thread, 0x10000100 - 10, 0x4000, 0, 0, NULL);
+  audio_thid =
+      sceKernelCreateThread("movie_audio_thread", movie_player_audio_thread,
+                            0x10000100 - 10, 0x4000, 0, 0, NULL);
   if (audio_thid < 0 || sceKernelStartThread(audio_thid, 0, NULL) < 0) {
     if (audio_thid >= 0) {
       sceKernelDeleteThread(audio_thid);
@@ -262,9 +275,7 @@ void playMovie() {
   movie_first_frame_drawn = 0;
 }
 
-void stopMovie() {
-  player_state = PLAYER_STOP;
-}
+void stopMovie() { player_state = PLAYER_STOP; }
 
 uint8_t getMovieState() {
   movie_player_draw();
@@ -546,8 +557,8 @@ void toUtf8(const char *src, size_t length, char *dst, const char *src_encoding,
     return;
   }
 
-  *dst_length_p = ucnv_fromUChars(conv, dst, (int32_t)(length * 3), temp, len,
-                                  &status);
+  *dst_length_p =
+      ucnv_fromUChars(conv, dst, (int32_t)(length * 3), temp, len, &status);
   ucnv_close(conv);
   if (U_FAILURE(status)) {
     *dst_length_p = 0;
@@ -602,7 +613,8 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
 
     for (int string_index = 0; string_index < string_number; string_index++) {
       int string_length = 0;
-      while ((string_offset + string_length) < *bArr_length && bArr[string_offset + string_length] != 0) {
+      while ((string_offset + string_length) < *bArr_length &&
+             bArr[string_offset + string_length] != 0) {
         string_length++;
       }
       if ((string_offset + string_length) >= *bArr_length) {
@@ -727,8 +739,8 @@ uint64_t getCurrentFrame(uint64_t j) {
 }
 
 #define RGBA8(r, g, b, a)                                                      \
-  ((((a)&0xFF) << 24) | (((b)&0xFF) << 16) | (((g)&0xFF) << 8) |               \
-   (((r)&0xFF) << 0))
+  ((((a) & 0xFF) << 24) | (((b) & 0xFF) << 16) | (((g) & 0xFF) << 8) |         \
+   (((r) & 0xFF) << 0))
 
 jni_intarray *loadTexture(jni_bytearray *bArr) {
   if (!bArr || !bArr->elements || bArr->size <= 0) {
