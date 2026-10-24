@@ -81,3 +81,4 @@ You can also use [vitasdk/vitasdk](https://hub.docker.com/r/vitasdk/vitasdk) wit
 - TheFloW for the initial arm elf loader.
 - Rinnegatamante for vitaGL, companion app and fixes.
 - Darthbellic for providing LiveArea assets.
+- Rinnegatamante for the CRT PostFX shaders from [PCSX_AwO](https://github.com/Rinnegatamante/PCSX_AwO), based on Mattias Gustavsson's [CRT shader](https://www.shadertoy.com/view/Ms23DR).
