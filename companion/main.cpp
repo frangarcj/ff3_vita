@@ -27,6 +27,14 @@ const char *ResolutionName[RESOLUTION_NUM] = {
   "1080i"
 };
 
+#define ASPECT_RATIO_NUM 4
+const char *AspectRatioName[ASPECT_RATIO_NUM] = {
+  "16:9",
+  "4:3",
+  "2:1",
+  "21:9"
+};
+
 #define ANTI_ALIASING_NUM 3
 const char *AntiAliasingName[ANTI_ALIASING_NUM] = {
   "Disabled",
@@ -55,6 +63,7 @@ typedef struct {
   int msaa;
   int postfx;
   int swap_buttons;
+  int aspect_ratio;
 } config_opts;
 config_opts options;
 
@@ -72,6 +81,7 @@ void loadOptions() {
   options.msaa = 2;
   options.postfx = 0;
   options.swap_buttons = 0;
+  options.aspect_ratio = 0;
 
   FILE *f = fopen(CONFIG_FILE_PATH, "rb");
   if (f) {
@@ -85,6 +95,7 @@ void loadOptions() {
       else if (strcmp("antialiasing", key) == 0) options.msaa = value;
       else if (strcmp("postfx", key) == 0) options.postfx = value;
       else if (strcmp("swap_buttons", key) == 0) options.swap_buttons = value;
+      else if (strcmp("aspect_ratio", key) == 0) options.aspect_ratio = value;
     }
     fclose(f);
   }
@@ -106,6 +117,7 @@ void saveOptions(void) {
 	fprintf(config, "%s=%d\n", "antialiasing", options.msaa);
     fprintf(config, "%s=%d\n", "postfx", options.postfx);
     fprintf(config, "%s=%d\n", "swap_buttons", options.swap_buttons);
+    fprintf(config, "%s=%d\n", "aspect_ratio", options.aspect_ratio);
     fclose(config);
   }
 }
@@ -117,6 +129,7 @@ const char *options_descs[] = {
   "Language to use for the game. When Auto is used, language will be decided based on system language.\nThe default value is: Auto.", // language
   "Enables usage of a post processing effect through shaders. May impact performances.\nThe default value is: Disabled.", // postfx
   "When enabled, Circle confirms and Cross cancels.\nThe default value is: Disabled.", // swap_buttons
+  "Aspect ratio of the game's view. 4:3 shows more of the scene vertically, while 2:1 and 21:9 show more horizontally, with black bars filling the rest of the screen.\nThe default value is: 16:9.", // aspect_ratio
 };
 
 enum {
@@ -125,7 +138,8 @@ enum {
   OPT_ANTIALIASING,
   OPT_LANGUAGE,
   OPT_POSTFX,
-  OPT_SWAP_BUTTONS
+  OPT_SWAP_BUTTONS,
+  OPT_ASPECT_RATIO
 };
 
 const char *desc = nullptr;
@@ -202,6 +216,20 @@ int main(int argc, char *argv[]) {
       ImGui::EndCombo();
     }
     SetDescription(OPT_RESOLUTION);
+
+    ImGui::Text("Aspect Ratio:"); ImGui::SameLine();
+    if (ImGui::BeginCombo("##combo4", AspectRatioName[options.aspect_ratio])) {
+      for (int n = 0; n < ASPECT_RATIO_NUM; n++) {
+        bool is_selected = options.aspect_ratio == n;
+        if (ImGui::Selectable(AspectRatioName[n], is_selected))
+          options.aspect_ratio = n;
+        SetDescription(OPT_ASPECT_RATIO);
+        if (is_selected)
+          ImGui::SetItemDefaultFocus();
+      }
+      ImGui::EndCombo();
+    }
+    SetDescription(OPT_ASPECT_RATIO);
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
     ImGui::Text("Bilinear Filter:"); ImGui::SameLine();

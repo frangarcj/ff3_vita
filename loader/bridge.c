@@ -32,6 +32,8 @@
 extern float postfx_pos[8];
 extern float postfx_texcoord[8];
 extern uint8_t in_movie;
+extern int SCREEN_W, SCREEN_H;
+extern int this_width, this_height, viewport_x, viewport_y;
 
 SceAvPlayerHandle movie_player;
 
@@ -161,7 +163,10 @@ void movie_player_draw(void) {
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
+        // The movie is 16:9 like the screen, so ignore the game's aspect ratio
+        glViewport(0, 0, SCREEN_W, SCREEN_H);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glViewport(viewport_x, viewport_y, this_width, this_height);
         glUseProgram(0);
       }
     } else {

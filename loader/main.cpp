@@ -76,6 +76,7 @@ static void set_default_options(void) {
   options.msaa = 2;
   options.postfx = 0;
   options.swap_buttons = 0;
+  options.aspect_ratio = 0;
 }
 
 void loadOptions() {
@@ -103,6 +104,8 @@ void loadOptions() {
         options.postfx = value;
       else if (strcmp("swap_buttons", key) == 0)
         options.swap_buttons = value;
+      else if (strcmp("aspect_ratio", key) == 0)
+        options.aspect_ratio = value;
     }
     fclose(f);
   }
@@ -768,10 +771,26 @@ extern "C" char *getcwd(char *buf, size_t size) {
 
 int this_width;
 int this_height;
+int viewport_x;
+int viewport_y;
+
+// Aspect ratios selectable in the Configurator, after the default full screen.
+// The game widens or heightens its view to match the size passed to render().
+static const int aspect_ratios[][2] = {{4, 3}, {2, 1}, {21, 9}};
 
 void setup_viewport(int width, int height) {
   int i3 = width * 3;
-  if (i3 >= height * 4) {
+  if (options.aspect_ratio > 0 && options.aspect_ratio <= 3) {
+    int num = aspect_ratios[options.aspect_ratio - 1][0];
+    int den = aspect_ratios[options.aspect_ratio - 1][1];
+    if (width * den > height * num) {
+      this_height = height;
+      this_width = (height * num) / den;
+    } else {
+      this_width = width;
+      this_height = (width * den) / num;
+    }
+  } else if (i3 >= height * 4) {
     this_height = height;
     this_width = width;
     if (this_width > (this_height * 21) / 9) {
@@ -781,9 +800,9 @@ void setup_viewport(int width, int height) {
     this_width = width;
     this_height = i3 / 4;
   }
-  int x = (width - this_width) / 2;
-  int y = (height - this_height) / 2;
-  glViewport(x, y, this_width, this_height);
+  viewport_x = (width - this_width) / 2;
+  viewport_y = (height - this_height) / 2;
+  glViewport(viewport_x, viewport_y, this_width, this_height);
 }
 
 GLuint frag, vert, fb, fb_tex, postfx_prog;
@@ -910,9 +929,12 @@ int main_thread(SceSize args, void *argp) {
 
     int reportNum = touch.reportNum > 2 ? 2 : touch.reportNum;
 
+    // Normalize touches to the game's viewport, which may be letterboxed
     for (n = 0; n < reportNum; n++) {
-      coordinates[n * 2] = (float)touch.report[n].x / 1920.0f;
-      coordinates[n * 2 + 1] = (float)touch.report[n].y / 1088.0f;
+      float x = (float)touch.report[n].x * SCREEN_W / 1920.0f;
+      float y = (float)touch.report[n].y * SCREEN_H / 1088.0f;
+      coordinates[n * 2] = (x - viewport_x) / this_width;
+      coordinates[n * 2 + 1] = (y - viewport_y) / this_height;
     }
 
     SceCtrlData pad;
@@ -965,7 +987,10 @@ int main_thread(SceSize args, void *argp) {
       glEnableVertexAttribArray(1);
       glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);
       glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, &postfx_texcoord[0]);
+      // The framebuffer already holds the black bars, so cover the whole screen
+      glViewport(0, 0, SCREEN_W, SCREEN_H);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glViewport(viewport_x, viewport_y, this_width, this_height);
       glUseProgram(0);
       glBindFramebuffer(GL_FRAMEBUFFER, fb);
     }
