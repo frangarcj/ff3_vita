@@ -75,6 +75,7 @@ static void set_default_options(void) {
   options.lang = 0;
   options.msaa = 2;
   options.postfx = 0;
+  options.swap_buttons = 0;
 }
 
 void loadOptions() {
@@ -100,6 +101,8 @@ void loadOptions() {
         options.msaa = value;
       else if (strcmp("postfx", key) == 0)
         options.postfx = value;
+      else if (strcmp("swap_buttons", key) == 0)
+        options.swap_buttons = value;
     }
     fclose(f);
   }
@@ -925,10 +928,11 @@ int main_thread(SceSize args, void *argp) {
       mask |= 0x200;
     if (pad.buttons & SCE_CTRL_R1)
       mask |= 0x100;
+    // 0x1 confirms and 0x2 cancels; swap_buttons moves confirm to Circle
     if (pad.buttons & SCE_CTRL_CROSS)
-      mask |= 0x1;
+      mask |= options.swap_buttons ? 0x2 : 0x1;
     if (pad.buttons & SCE_CTRL_CIRCLE)
-      mask |= 0x2;
+      mask |= options.swap_buttons ? 0x1 : 0x2;
     if (pad.buttons & SCE_CTRL_START)
       mask |= 0x8;
     if (pad.buttons & SCE_CTRL_SELECT)

@@ -54,10 +54,12 @@ typedef struct {
   int lang;
   int msaa;
   int postfx;
+  int swap_buttons;
 } config_opts;
 config_opts options;
 
 bool bilinear_filter;
+bool swap_buttons;
 
 void loadOptions() {
   char line[128];
@@ -69,6 +71,7 @@ void loadOptions() {
   options.lang = 0;
   options.msaa = 2;
   options.postfx = 0;
+  options.swap_buttons = 0;
 
   FILE *f = fopen(CONFIG_FILE_PATH, "rb");
   if (f) {
@@ -81,15 +84,18 @@ void loadOptions() {
       else if (strcmp("language", key) == 0) options.lang = value;
       else if (strcmp("antialiasing", key) == 0) options.msaa = value;
       else if (strcmp("postfx", key) == 0) options.postfx = value;
+      else if (strcmp("swap_buttons", key) == 0) options.swap_buttons = value;
     }
     fclose(f);
   }
 
   bilinear_filter = options.bilinear ? true : false;
+  swap_buttons = options.swap_buttons ? true : false;
 }
 
 void saveOptions(void) {
   options.bilinear = bilinear_filter ? 1 : 0;
+  options.swap_buttons = swap_buttons ? 1 : 0;
 
   FILE *config = fopen(CONFIG_FILE_PATH, "w+");
 
@@ -99,6 +105,7 @@ void saveOptions(void) {
     fprintf(config, "%s=%d\n", "language", options.lang);
 	fprintf(config, "%s=%d\n", "antialiasing", options.msaa);
     fprintf(config, "%s=%d\n", "postfx", options.postfx);
+    fprintf(config, "%s=%d\n", "swap_buttons", options.swap_buttons);
     fclose(config);
   }
 }
@@ -109,6 +116,7 @@ const char *options_descs[] = {
   "Anti-Aliasing is a technique used to reduce graphical artifacts surrounding 3D models. Greatly improves graphics quality at the cost of some GPU power.\nThe default value is: MSAA 4x.", // antialiasing
   "Language to use for the game. When Auto is used, language will be decided based on system language.\nThe default value is: Auto.", // language
   "Enables usage of a post processing effect through shaders. May impact performances.\nThe default value is: Disabled.", // postfx
+  "When enabled, Circle confirms and Cross cancels.\nThe default value is: Disabled.", // swap_buttons
 };
 
 enum {
@@ -116,7 +124,8 @@ enum {
   OPT_BILINEAR,
   OPT_ANTIALIASING,
   OPT_LANGUAGE,
-  OPT_POSTFX
+  OPT_POSTFX,
+  OPT_SWAP_BUTTONS
 };
 
 const char *desc = nullptr;
@@ -244,6 +253,12 @@ int main(int argc, char *argv[]) {
       ImGui::EndCombo();
     }
     SetDescription(OPT_LANGUAGE);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+    ImGui::Text("Swap Cross/Circle:"); ImGui::SameLine();
+    ImGui::Checkbox("##check1", &swap_buttons);
+    SetDescription(OPT_SWAP_BUTTONS);
+	ImGui::PopStyleVar();
 
     ImGui::Separator();
 

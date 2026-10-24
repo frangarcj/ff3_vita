@@ -21,6 +21,7 @@ typedef struct {
   int lang;
   int msaa;
   int postfx;
+  int swap_buttons;
 } config_opts;
 extern config_opts options;
 
