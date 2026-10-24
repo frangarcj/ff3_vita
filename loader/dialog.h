@@ -1,7 +1,7 @@
 #ifndef __DIALOG_H__
 #define __DIALOG_H__
 
-int init_ime_dialog(const char *title, const char *initial_text);
+int init_ime_dialog(const char *title, const char *initial_text, int latin_only);
 char *get_ime_dialog_result(void);
 
 int init_msg_dialog(const char *msg);

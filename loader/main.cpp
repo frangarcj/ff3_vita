@@ -1004,6 +1004,16 @@ void patch_game(void) {
 #ifdef DEBUG
   hook_thumb(ff3_mod.text_base + 0xe58b6, (uintptr_t)&printf);
 #endif
+
+  // The game only has default party names for Japanese and both Chinese, and
+  // falls back to the English row (Luneth, Arc, Refia, Ingus) for the rest.
+  // Point that row at Korean names when playing in Korean.
+  if (getCurrentLanguage() == 8) {
+    static const char *korean_names[] = {"루네스", "아르크", "레피아", "잉거스"};
+    uintptr_t *english_names = (uintptr_t *)(ff3_mod.text_base + 0x22bbb8);
+    for (int i = 0; i < 4; i++)
+      english_names[i] = (uintptr_t)korean_names[i];
+  }
 }
 
 extern "C" {

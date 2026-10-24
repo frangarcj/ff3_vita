@@ -996,7 +996,12 @@ jni_intarray *drawFont(char *word, int size, int i2, int i3) {
 
 int editText = -1;
 
-void createEditText(char *str) { editText = init_ime_dialog("", str); }
+void createEditText(char *str) {
+  // Japanese (0), Chinese (6, 7) and Korean (8) names need their own scripts
+  int lang = getCurrentLanguage();
+  int latin_only = lang != 0 && lang != 6 && lang != 7 && lang != 8;
+  editText = init_ime_dialog("", str, latin_only);
+}
 
 extern GLuint fb;
 char *getEditText() {

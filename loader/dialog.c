@@ -64,7 +64,7 @@ void utf8_to_utf16(const uint8_t *src, uint16_t *dst) {
   *dst = '\0';
 }
 
-int init_ime_dialog(const char *title, const char *initial_text) {
+int init_ime_dialog(const char *title, const char *initial_text, int latin_only) {
   memset(ime_title_utf16, 0, sizeof(ime_title_utf16));
   memset(ime_initial_text_utf16, 0, sizeof(ime_initial_text_utf16));
   memset(ime_input_text_utf16, 0, sizeof(ime_input_text_utf16));
@@ -78,7 +78,7 @@ int init_ime_dialog(const char *title, const char *initial_text) {
 
   param.supportedLanguages = 0x0001FFFF;
   param.languagesForced = SCE_TRUE;
-  param.type = SCE_IME_TYPE_BASIC_LATIN;
+  param.type = latin_only ? SCE_IME_TYPE_BASIC_LATIN : SCE_IME_TYPE_DEFAULT;
   param.title = ime_title_utf16;
   param.maxTextLength = SCE_IME_DIALOG_MAX_TEXT_LENGTH;
   param.initialText = ime_initial_text_utf16;
