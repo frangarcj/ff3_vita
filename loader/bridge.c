@@ -568,6 +568,38 @@ void toUtf8(const char *src, size_t length, char *dst, const char *src_encoding,
   free(temp);
 }
 
+// The Spanish Android TV texts (es.lproj/*_tv.msd) ship with the name tags
+// mangled: "?P1???".."?P4???" instead of "%shuyaku1%".."%shuyaku4%" and
+// "?P???" instead of "%lead_player_name%", so the game printed them
+// literally. Restore the tags in place.
+static unsigned int fixNameTags(char *str, unsigned int length) {
+  for (unsigned int i = 0; i + 5 <= length; i++) {
+    if (str[i] != '?' || str[i + 1] != 'P')
+      continue;
+
+    char tag[19];
+    unsigned int mangled_length;
+    if (i + 6 <= length && str[i + 2] >= '1' && str[i + 2] <= '4' &&
+        str[i + 3] == '?' && str[i + 4] == '?' && str[i + 5] == '?') {
+      snprintf(tag, sizeof(tag), "%%shuyaku%c%%", str[i + 2]);
+      mangled_length = 6;
+    } else if (str[i + 2] == '?' && str[i + 3] == '?' && str[i + 4] == '?') {
+      strcpy(tag, "%lead_player_name%");
+      mangled_length = 5;
+    } else {
+      continue;
+    }
+
+    unsigned int tag_length = strlen(tag);
+    memmove(&str[i + tag_length], &str[i + mangled_length],
+            length - i - mangled_length);
+    memcpy(&str[i], tag, tag_length);
+    length += tag_length - mangled_length;
+    i += tag_length - 1;
+  }
+  return length;
+}
+
 unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
   if (!bArr || !bArr_length || *bArr_length < 16) {
     return bArr;
@@ -578,7 +610,8 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
     return bArr;
   }
 
-  unsigned char *utf8_strings = malloc(*bArr_length * 3);
+  // UTF-8 can triple a byte and fixNameTags grows "?P???" 3.6x
+  unsigned char *utf8_strings = malloc(*bArr_length * 4);
   if (!utf8_strings) {
     return bArr;
   }
@@ -625,6 +658,7 @@ unsigned char *decodeString(unsigned char *bArr, int *bArr_length) {
       toUtf8((const char *)&bArr[string_offset], string_length,
              (char *)&utf8_strings[utf8_offset],
              lang == 0 ? "shift_jis" : "windows-1252", &utf8_length);
+      utf8_length = fixNameTags((char *)&utf8_strings[utf8_offset], utf8_length);
 
       utf8_strings[utf8_offset + utf8_length] = 0;
 
