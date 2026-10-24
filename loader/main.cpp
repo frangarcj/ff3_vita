@@ -15,6 +15,7 @@ extern "C" {
 #include <psp2/io/dirent.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/kernel/clib.h>
+#include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/power.h>
 #include <psp2/touch.h>
@@ -783,6 +784,7 @@ void setup_viewport(int width, int height) {
 }
 
 GLuint frag, vert, fb, fb_tex, postfx_prog;
+GLint postfx_time_loc = -1, postfx_size_loc = -1;
 uint16_t *postfx_indices;
 float *postfx_texcoords, *postfx_vertices;
 
@@ -854,8 +856,8 @@ int main_thread(SceSize args, void *argp) {
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, fb_tex, 0);
 
-    frag = glCreateShader(GL_FRAGMENT_SHADER);
-    vert = glCreateShader(GL_VERTEX_SHADER);
+    frag = glCreateShader(GL_CG_FRAGMENT_SHADER_EXT);
+    vert = glCreateShader(GL_CG_VERTEX_SHADER_EXT);
     char path[512];
     SceIoDirent d;
     SceUID fd = sceIoDopen("app0:shaders");
@@ -876,6 +878,10 @@ int main_thread(SceSize args, void *argp) {
     glBindAttribLocation(postfx_prog, 0, "position");
     glBindAttribLocation(postfx_prog, 1, "texcoord");
     glLinkProgram(postfx_prog);
+
+    // Optional uniforms some effects (CRT) use
+    postfx_time_loc = glGetUniformLocation(postfx_prog, "iTime");
+    postfx_size_loc = glGetUniformLocation(postfx_prog, "uOutputSize");
   }
 
   int (*ff3_render)(char *, int, int, int, int) =
@@ -944,6 +950,13 @@ int main_thread(SceSize args, void *argp) {
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
       glBindTexture(GL_TEXTURE_2D, fb_tex);
       glUseProgram(postfx_prog);
+      if (postfx_time_loc >= 0) {
+        // Wrapped at a multiple of the scanline scroll period (4s) to keep float precision
+        float t = (float)(sceKernelGetProcessTimeWide() % 3600000000ULL) / 1000000.0f;
+        glUniform1f(postfx_time_loc, t);
+      }
+      if (postfx_size_loc >= 0)
+        glUniform2f(postfx_size_loc, (float)SCREEN_W, (float)SCREEN_H);
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);
       glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &postfx_pos[0]);

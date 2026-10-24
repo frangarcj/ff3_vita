@@ -202,11 +202,11 @@ void movie_player_init() {
     vglFree(vglGetTexDataPointer(GL_TEXTURE_2D));
   }
 
-  movie_vs = glCreateShader(GL_VERTEX_SHADER);
+  movie_vs = glCreateShader(GL_CG_VERTEX_SHADER_EXT);
   glShaderSource(movie_vs, 1, &movie_v, NULL);
   glCompileShader(movie_vs);
 
-  movie_fs = glCreateShader(GL_FRAGMENT_SHADER);
+  movie_fs = glCreateShader(GL_CG_FRAGMENT_SHADER_EXT);
   glShaderSource(movie_fs, 1, &movie_f, NULL);
   glCompileShader(movie_fs);
 
